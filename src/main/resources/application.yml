@@ -1,0 +1,28 @@
+spring:
+ application:
+  name : smart-marisco-api
+ datasource:
+  driver-class-name: com.mysql.cj.jdbc.Driver
+  url: jdbc:mysql://localhost:3306/sm_bd?useTimezone=true&serverTimezone=UTC
+  username: root
+  password:
+ jpa:
+   hibernate:
+     ddl-auto: validate
+   properties:
+     hibernate:
+   show-sql: false
+   open-in-view: false  
+logging:
+  level:
+     #root: WARN
+    mz.com.sgp: DEBUG
+cors:
+ originPatterns: http://localhost:4200
+ # application.yml
+ spring:
+   jackson:
+     serialization:
+       write-dates-as-timestamps: false
+     date-format: yyyy-MM-dd HH:mm:ss
+     time-zone: Europe/Lisbon
