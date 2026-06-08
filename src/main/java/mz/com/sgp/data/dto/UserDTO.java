@@ -1,5 +1,6 @@
 package mz.com.sgp.data.dto;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.springframework.hateoas.server.core.Relation;
@@ -21,6 +22,8 @@ public class UserDTO extends AuditableDTO<UserDTO> {
 	private String password;
 
 	private String image;
+
+	private List<String> roles;
 
 	public UserDTO() {
 		super();
@@ -58,11 +61,19 @@ public class UserDTO extends AuditableDTO<UserDTO> {
 		this.image = image;
 	}
 
+	public List<String> getRoles() {
+		return roles;
+	}
+
+	public void setRoles(List<String> roles) {
+		this.roles = roles;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + Objects.hash(fullName, image, password);
+		result = prime * result + Objects.hash(fullName, image, password, roles, userName);
 		return result;
 	}
 
@@ -76,7 +87,8 @@ public class UserDTO extends AuditableDTO<UserDTO> {
 			return false;
 		UserDTO other = (UserDTO) obj;
 		return Objects.equals(fullName, other.fullName) && Objects.equals(image, other.image)
-				&& Objects.equals(password, other.password) && Objects.equals(userName, other.userName);
+				&& Objects.equals(password, other.password) && Objects.equals(roles, other.roles)
+				&& Objects.equals(userName, other.userName);
 	}
 
 }

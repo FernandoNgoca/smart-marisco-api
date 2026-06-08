@@ -1,6 +1,7 @@
 package mz.com.sgp.data.dto.security;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Objects;
 
 public class AccountCredentialsDTO implements Serializable {
@@ -12,6 +13,10 @@ public class AccountCredentialsDTO implements Serializable {
 	private String password;
 
 	private String fullname;
+
+	private String image;
+
+	private List<String> roles;
 
 	public AccountCredentialsDTO() {
 	}
@@ -46,9 +51,25 @@ public class AccountCredentialsDTO implements Serializable {
 		this.fullname = fullname;
 	}
 
+	public String getImage() {
+		return image;
+	}
+
+	public void setImage(String image) {
+		this.image = image;
+	}
+
+	public List<String> getRoles() {
+		return roles;
+	}
+
+	public void setRoles(List<String> roles) {
+		this.roles = roles;
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(fullname, password, username);
+		return Objects.hash(fullname, image, password, roles, username);
 	}
 
 	@Override
@@ -60,7 +81,8 @@ public class AccountCredentialsDTO implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		AccountCredentialsDTO other = (AccountCredentialsDTO) obj;
-		return Objects.equals(fullname, other.fullname) && Objects.equals(password, other.password)
+		return Objects.equals(fullname, other.fullname) && Objects.equals(image, other.image)
+				&& Objects.equals(password, other.password) && Objects.equals(roles, other.roles)
 				&& Objects.equals(username, other.username);
 	}
 

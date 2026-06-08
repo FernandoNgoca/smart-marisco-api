@@ -1,8 +1,8 @@
 package mz.com.sgp.config;
 
-import mz.com.sgp.security.jwt.JwtTokenFilter;
-import mz.com.sgp.security.jwt.JwtTokenProvider;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,24 +17,21 @@ import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import java.util.HashMap;
-import java.util.Map;
+import mz.com.sgp.security.jwt.JwtTokenFilter;
+import mz.com.sgp.security.jwt.JwtTokenProvider;
 
 @EnableWebSecurity
 @Configuration
 public class SecurityConfig {
 
-
-    @Autowired
-    private JwtTokenProvider tokenProvider;
+    private final JwtTokenProvider tokenProvider;
 
     public SecurityConfig(JwtTokenProvider tokenProvider) {
         this.tokenProvider = tokenProvider;
     }
 
     @Bean
-    PasswordEncoder passwordEncoder(){
-
+    PasswordEncoder passwordEncoder() {
         PasswordEncoder pbkdf2Encoder = new Pbkdf2PasswordEncoder(
                 "", 8, 185000,
                 Pbkdf2PasswordEncoder.SecretKeyFactoryAlgorithm.PBKDF2WithHmacSHA256);
@@ -55,31 +52,35 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         JwtTokenFilter filter = new JwtTokenFilter(tokenProvider);
-        //@formatter:off
+        
+        // @formatter:off
         return http
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
+                .anonymous(AbstractHttpConfigurer::disable)
                 .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class)
-                .sessionManagement(
-                        session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authorize -> authorize
+                        // Rotas públicas (acesso liberado sem autenticação)
+                        .requestMatchers(
+                                "/auth/signin",
+                                "/auth/refresh/**",
+                                "/auth/createUser",
+                                "/auth/change-password",
+                                "/auth/update-user",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+                        // Rotas que exigem autenticação
+                        .requestMatchers("/api/**").authenticated()
+                        // Rotas bloqueadas para todos
+                        .requestMatchers("/users").denyAll()
+                        // Qualquer outra rota exige autenticação (ou permita se for o caso)
+                        .anyRequest().authenticated()  // ← MUDEI de permitAll() para authenticated()
                 )
-                .authorizeHttpRequests(
-                        authorizeHttpRequests -> authorizeHttpRequests
-                                .requestMatchers(
-                                        "/auth/signin",
-                                        "/auth/refresh/**",
-                                        "/auth/createUser",
-                                        "/swagger-ui/**",
-                                        "/v3/api-docs/**"
-                                ).permitAll()
-                                .requestMatchers("/api/**").authenticated()
-                                .requestMatchers("/users").denyAll()
-                )
-                		.authorizeHttpRequests(authz -> authz
-                			    .anyRequest().permitAll()
-                			)
-                .cors(cors -> {})
+                .cors(cors -> cors.configure(http))
                 .build();
-        //@formatter:on
+        // @formatter:on
     }
 }
