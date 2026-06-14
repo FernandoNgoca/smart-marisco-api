@@ -31,4 +31,4 @@ logging:
     mz.com.sgp: DEBUG
 
 cors:
-  originPatterns: http://localhost:4200
+  originPatterns:  "*"
