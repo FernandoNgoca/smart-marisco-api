@@ -4,9 +4,9 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASS}
+    url: mysql://HOST:3306/smart_marisco?useSSL=false&serverTimezone=UTC
+    username: root
+    password:
 
   jpa:
     hibernate:
