@@ -4,21 +4,33 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url:  ${DB_URL}
+    url: ${DB_URL}
     username: ${DB_USER}
     password: ${DB_PASS}
 
   jpa:
     hibernate:
-      ddl-auto: validate
-
+      ddl-auto: validate  # Mantém validate - o Flyway cria as tabelas
     show-sql: false
     open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+  # ⬇️ ADICIONE ESTA SEÇÃO ⬇️
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    # Para TiDB, pode ser necessário:
+    mysql:
+      use-information-schema: true
 
   jackson:
     serialization:
       write-dates-as-timestamps: false
-
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Europe/Lisbon
 
@@ -29,6 +41,7 @@ server:
 logging:
   level:
     mz.com.sgp: DEBUG
+    org.flywaydb: DEBUG  # Para ver os logs do Flyway
 
 cors:
-  originPatterns:  "*"
+  originPatterns: "*"
