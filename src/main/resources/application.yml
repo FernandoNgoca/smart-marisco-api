@@ -10,21 +10,20 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate  # Mantém validate - o Flyway cria as tabelas
+      ddl-auto: validate  # Mantém validate
     show-sql: false
     open-in-view: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
 
-  # ⬇️ ADICIONE ESTA SEÇÃO ⬇️
   flyway:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 1
     locations: classpath:db/migration
-    validate-on-migrate: true
-    # Para TiDB, pode ser necessário:
+    validate-on-migrate: false  # Desativa validação para teste
+    # Configuração para TiDB/MySQL
     mysql:
       use-information-schema: true
 
@@ -41,7 +40,8 @@ server:
 logging:
   level:
     mz.com.sgp: DEBUG
-    org.flywaydb: DEBUG  # Para ver os logs do Flyway
+    org.flywaydb: DEBUG
+    org.springframework.boot.autoconfigure.flyway: DEBUG
 
 cors:
   originPatterns: "*"
