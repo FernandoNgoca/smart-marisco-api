@@ -1,31 +1,24 @@
 spring:
-  application:
-    name: smart-marisco-api
-
   datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASS}
 
   jpa:
     hibernate:
-      ddl-auto: validate  # Mantém validate
-    show-sql: false
-    open-in-view: false
+      ddl-auto: none  # TiDB não precisa de validação
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        use_sql_comments: true
+        # Importante para TiDB
+        hibernate.jdbc.lob.non_contextual_creation: true
 
   flyway:
     enabled: true
-    baseline-on-migrate: false
-    baseline-version: 1
+    baseline-on-migrate: true
+    validate-on-migrate: false  # Desative para TiDB
     locations: classpath:db/migration
-    validate-on-migrate: false  # Desativa validação para teste
-    # Configuração para TiDB/MySQL
-    mysql:
-      use-information-schema: true
 
   jackson:
     serialization:
