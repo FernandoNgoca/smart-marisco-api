@@ -15,15 +15,15 @@ import mz.com.sgp.model.SaleStatus;
 
 public interface SaleRepository extends JpaRepository<SaleEntity, Long> {
 
-	@Query("SELECT p FROM SaleEntity p WHERE p.status = :status")
+	@Query("SELECT s FROM SaleEntity s WHERE s.status = :status")
 	Page<SaleEntity> findAll(Pageable pageable, @Param("status") EntityState status);
 
 	@Query("""
-			    SELECT p FROM SaleEntity p
+			    SELECT s FROM SaleEntity s
 			    WHERE (:search IS NULL
-			           OR LOWER(p.client.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
-			           OR LOWER(p.client.lastName) LIKE LOWER(CONCAT('%', :search, '%')))
-			      AND p.status = :status
+			           OR LOWER(s.client.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
+			           OR LOWER(s.client.lastName) LIKE LOWER(CONCAT('%', :search, '%')))
+			      AND s.status = :status
 			""")
 	Page<SaleEntity> search(@Param("search") String search, @Param("status") EntityState status, Pageable pageable);
 
@@ -52,4 +52,32 @@ public interface SaleRepository extends JpaRepository<SaleEntity, Long> {
 	Long countSalesCurrentMonth(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end,
 			@Param("saleStatus") SaleStatus saleStatus, @Param("status") EntityState status);
 
+	@Query("""
+			    SELECT COUNT(s.id)
+			    FROM SaleEntity s
+			    WHERE s.createdDate >= :start
+			    AND s.createdDate < :end
+			    AND s.saleStatus = :saleStatus
+			    AND s.status = :status
+			""")
+	Long countSalesCurrentDay(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end,
+			@Param("saleStatus") SaleStatus saleStatus, @Param("status") EntityState status);
+
+	@Query("SELECT s FROM SaleEntity s WHERE s.status = :status AND s.saleStatus = :saleStatus AND clientId IS NOT NULL")
+	Page<SaleEntity> findAllOrders(Pageable pageable, @Param("status") EntityState status,
+			@Param("saleStatus") SaleStatus saleStatus);
+
+	@Query("""
+			    SELECT s FROM SaleEntity s
+			    WHERE (:search IS NULL
+			           OR LOWER(s.client.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
+			           OR LOWER(s.client.lastName) LIKE LOWER(CONCAT('%', :search, '%')))
+			      AND s.status = :status
+			      AND s.saleStatus = :saleStatus
+			      AND s.clientId IS NOT NULL
+			""")
+	Page<SaleEntity> searchOrders(@Param("search") String search, @Param("status") EntityState status,
+			Pageable pageable, @Param("saleStatus") SaleStatus saleStatus);
+	
+	long countByStatusAndSaleStatus(EntityState status, SaleStatus saleStatus);
 }

@@ -15,6 +15,8 @@ public class TopProductDTO {
 	private BigDecimal quantity;
 
 	private BigDecimal totalValue;
+	
+	private UnitDTO unit;
 
 	public TopProductDTO(Long id, String name, String image, BigDecimal salePrice, BigDecimal quantity,
 			BigDecimal totalValue) {
@@ -73,6 +75,14 @@ public class TopProductDTO {
 
 	public void setTotalValue(BigDecimal totalValue) {
 		this.totalValue = totalValue;
+	}
+
+	public UnitDTO getUnit() {
+		return unit;
+	}
+
+	public void setUnit(UnitDTO unit) {
+		this.unit = unit;
 	}
 
 }
