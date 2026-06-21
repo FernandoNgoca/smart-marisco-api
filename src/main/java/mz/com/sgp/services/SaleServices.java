@@ -135,6 +135,24 @@ public class SaleServices {
 		return saleRepository.countSalesCurrentMonth(start, end, SaleStatus.COMPLETED, EntityState.ACTIVE);
 	}
 
+	public Long countSalesCurrentDay() {
+		LocalDate today = LocalDate.now();
+
+		LocalDateTime start = today.atStartOfDay();
+		LocalDateTime end = today.plusDays(1).atStartOfDay();
+
+		return saleRepository.countSalesCurrentDay(start, end, SaleStatus.COMPLETED, EntityState.ACTIVE);
+	}
+
+	public Long countOrdersCurrentDay() {
+		LocalDate today = LocalDate.now();
+
+		LocalDateTime start = today.atStartOfDay();
+		LocalDateTime end = today.plusDays(1).atStartOfDay();
+
+		return saleRepository.countSalesCurrentDay(start, end, SaleStatus.ORDERS, EntityState.ACTIVE);
+	}
+
 	public List<SalesByDayDTO> findSalesByWeek() {
 
 		LocalDate today = LocalDate.now();
@@ -171,6 +189,23 @@ public class SaleServices {
 		return sales.entrySet().stream().map(e -> new SalesByDayDTO(e.getKey(), e.getValue())).toList();
 	}
 
+	public PagedModel<EntityModel<SaleDTO>> findAllOrders(Pageable pageable, String search) {
+
+		Page<SaleEntity> sale;
+
+		if (search != null && !search.isBlank()) {
+			sale = saleRepository.searchOrders(search.toLowerCase(), EntityState.ACTIVE, pageable, SaleStatus.ORDERS);
+		} else {
+			sale = saleRepository.findAllOrders(pageable, EntityState.ACTIVE, SaleStatus.ORDERS);
+		}
+
+		return buildPagedModel(pageable, sale, search);
+	}
+	
+	public long countByStatusAndSaleStatus() {
+		return saleRepository.countByStatusAndSaleStatus(EntityState.ACTIVE, SaleStatus.ORDERS);
+	}
+
 	private PagedModel<EntityModel<SaleDTO>> buildPagedModel(Pageable pageable, Page<SaleEntity> sale, String search) {
 
 		var products = sale.map(p -> {
@@ -189,4 +224,5 @@ public class SaleServices {
 
 		return assembler.toModel(products, findAllLink);
 	}
+
 }
