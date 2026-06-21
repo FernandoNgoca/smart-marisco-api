@@ -65,5 +65,33 @@ public class SaleController {
 	public List<SalesByDayDTO> getSalesByWeek() {
 	    return saleServices.findSalesByWeek();
 	}
+	
+	@GetMapping(value = "/countSalesCurrentDay", produces = MediaType.APPLICATION_JSON_VALUE)
+	public Long countSalesCurrentDay() {
+		return saleServices.countSalesCurrentDay();
+	}
+	
+	@GetMapping(value = "/countOrdersCurrentDay", produces = MediaType.APPLICATION_JSON_VALUE)
+	public Long countOrdersCurrentDay() {
+		return saleServices.countOrdersCurrentDay();
+	}
+	
+	@GetMapping(value = "/findAllOrders",produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<PagedModel<EntityModel<SaleDTO>>> findAllOrders(
+			@RequestParam(value = "page", defaultValue = "0") Integer page,
+			@RequestParam(value = "size", defaultValue = "12") Integer size,
+			@RequestParam(value = "direction", defaultValue = "asc") String direction,
+			@RequestParam(value = "sortField", defaultValue = "") String sortField,
+			@RequestParam(value = "search", required = false) String search) {
+		var sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
 
+		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortField));
+
+		return ResponseEntity.ok(saleServices.findAllOrders(pageable, search));
+	}
+	
+	@GetMapping("/countByStatusAndSaleStatus")
+	public long countByStatusAndSaleStatus() {
+		return saleServices.countByStatusAndSaleStatus();
+	}
 }
