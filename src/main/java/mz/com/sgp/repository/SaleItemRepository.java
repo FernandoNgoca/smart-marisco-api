@@ -24,4 +24,6 @@ public interface SaleItemRepository extends JpaRepository<SaleItemEntity, Long> 
 			    ORDER BY SUM(si.quantity) DESC
 			""")
 	List<Object[]> findTopProducts(@Param("saleStatus") SaleStatus saleStatus, @Param("status") EntityState status);
+	
+	List<SaleItemEntity> findAllByStatusAndSaleId(EntityState status, Long saleId);
 }

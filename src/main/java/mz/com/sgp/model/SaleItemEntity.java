@@ -20,7 +20,7 @@ public class SaleItemEntity extends AuditableEntity {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "PRODUCT_ID", insertable = false, updatable = false, nullable = false)
 	private ProductEntity product;
 
@@ -30,7 +30,7 @@ public class SaleItemEntity extends AuditableEntity {
 	@Column(name = "QUANTITY", nullable = false)
 	private BigDecimal quantity;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "SALE_ID", insertable = false, updatable = false, nullable = false)
 	private SaleEntity sale;
 

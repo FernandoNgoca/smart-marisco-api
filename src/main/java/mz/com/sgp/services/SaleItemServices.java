@@ -45,4 +45,14 @@ public class SaleItemServices {
 				.toList();
 	}
 
+	public List<SaleItemDTO> findAllByStatusAndSaleId(Long saleId) {
+		logger.info("");
+
+		var saleItemEntity = saleItemRepository.findAllByStatusAndSaleId(EntityState.ACTIVE, saleId);
+
+		var saleItemDTO = parseListObjects(saleItemEntity, SaleItemDTO.class);
+
+		return saleItemDTO;
+	}
+
 }
