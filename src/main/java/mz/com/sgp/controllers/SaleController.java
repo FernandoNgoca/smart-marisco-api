@@ -68,7 +68,7 @@ public class SaleController {
 	
 	@GetMapping(value = "/countSalesPreviousMonth", produces = MediaType.APPLICATION_JSON_VALUE)
 	public Long countSalesPreviousMonth() {
-		return saleServices.countSalesCurrentMonth();
+		return saleServices.countSalesPreviousMonth();
 	}
 	
 	@GetMapping(value ="/find-sales-by-week", produces = MediaType.APPLICATION_JSON_VALUE)
