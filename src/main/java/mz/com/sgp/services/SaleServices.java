@@ -119,6 +119,21 @@ public class SaleServices {
 		return saleRepository.countByCreatedDateBetweenAndSaleStatusAndStatus(start, end, SaleStatus.COMPLETED,
 				EntityState.ACTIVE);
 	}
+	
+	public Long countYesterdaySales() {
+
+	    LocalDate yesterday = LocalDate.now().minusDays(1);
+
+	    LocalDateTime start = yesterday.atStartOfDay();
+	    LocalDateTime end = yesterday.plusDays(1).atStartOfDay();
+
+	    return saleRepository.countByCreatedDateBetweenAndSaleStatusAndStatus(
+	            start,
+	            end,
+	            SaleStatus.COMPLETED,
+	            EntityState.ACTIVE
+	    );
+	}
 
 	public Long countSalesCurrentMonth() {
 
@@ -133,6 +148,26 @@ public class SaleServices {
 		LocalDateTime end = now.plusMonths(1).withDayOfMonth(1).atStartOfDay();
 
 		return saleRepository.countSalesCurrentMonth(start, end, SaleStatus.COMPLETED, EntityState.ACTIVE);
+	}
+	
+	public Long countSalesPreviousMonth() {
+
+	    ZoneId zone = ZoneId.systemDefault();
+
+	    LocalDate now = LocalDate.now(zone).minusMonths(1);
+
+	    // Primeiro dia do mês anterior às 00:00
+	    LocalDateTime start = now.withDayOfMonth(1).atStartOfDay();
+
+	    // Primeiro dia do mês atual às 00:00
+	    LocalDateTime end = now.plusMonths(1).withDayOfMonth(1).atStartOfDay();
+
+	    return saleRepository.countSalesCurrentMonth(
+	            start,
+	            end,
+	            SaleStatus.COMPLETED,
+	            EntityState.ACTIVE
+	    );
 	}
 
 	public Long countSalesCurrentDay() {
