@@ -55,10 +55,20 @@ public class SaleController {
 	public Long countByCreatedDateBetweenAndSaleStatusAndStatus() {
 		return saleServices.countByCreatedDateBetweenAndSaleStatusAndStatus();
 	}
+	
+	@GetMapping(value = "/countYesterdaySales", produces = MediaType.APPLICATION_JSON_VALUE)
+	public Long countYesterdaySales() {
+		return saleServices.countYesterdaySales();
+	}
 
 	@GetMapping(value = "/countSalesCurrentMonth", produces = MediaType.APPLICATION_JSON_VALUE)
 	public Long countSalesCurrentMonth() {
 		return saleServices.countSalesCurrentMonth();
+	}
+	
+	@GetMapping(value = "/countSalesPreviousMonth", produces = MediaType.APPLICATION_JSON_VALUE)
+	public Long countSalesPreviousMonth() {
+		return saleServices.countSalesPreviousMonth();
 	}
 	
 	@GetMapping(value ="/find-sales-by-week", produces = MediaType.APPLICATION_JSON_VALUE)
