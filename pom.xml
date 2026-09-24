@@ -94,6 +94,16 @@
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 	</dependencies>
 
 	<build>
@@ -101,30 +111,6 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.flywaydb</groupId>
-				<artifactId>flyway-maven-plugin</artifactId>
-				<configuration>
-					<url>
-						jdbc:mysql://localhost:3306/sgp_bd?useTimezone=true&amp;serverTimezone=UTC</url>
-					<userEntity>root</userEntity>
-					<password>admin123</password>
-				</configuration>
-				<dependencies>
-					<dependency>
-						<groupId>com.mysql</groupId>
-						<artifactId>mysql-connector-j</artifactId>
-						<version>9.1.0</version>
-						<exclusions>
-							<exclusion>
-								<groupId>org.slf4j</groupId>
-								<artifactId>slf4j-api</artifactId>
-							</exclusion>
-						</exclusions>
-
-					</dependency>
-				</dependencies>
 			</plugin>
 		</plugins>
 	</build>

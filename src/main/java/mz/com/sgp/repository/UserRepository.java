@@ -11,6 +11,10 @@ import mz.com.sgp.model.UserEntity;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM UserEntity u WHERE u.userName = :userName")
+    UserEntity findForUpdateByUsername(@Param("userName") String userName);
+
 	@Query("SELECT u FROM UserEntity u WHERE u.userName =:userName")
 	UserEntity findByUsername(@Param("userName") String userName);
 

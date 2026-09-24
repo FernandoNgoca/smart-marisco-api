@@ -1,34 +1,55 @@
 spring:
-  application:
-    name: smart-marisco-api
+    config:
+        import: optional:file:.env.local.properties
 
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/sm_bd?serverTimezone=UTC
-    username: root
-    password:
+    application:
+        name: smart-marisco-api
 
-  jpa:
-    hibernate:
-      ddl-auto: validate
+    datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: ${DB_URL:jdbc:mysql://localhost:3306/sm_bd?serverTimezone=UTC}
+        username: ${DB_USERNAME:root}
+        password: ${DB_PASSWORD:Supremo@2026!}
 
-    show-sql: false
-    open-in-view: false
+    jpa:
+        hibernate:
+            ddl-auto: validate
+            naming:
+                physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
-  jackson:
-    serialization:
-      write-dates-as-timestamps: false
+        show-sql: false
+        open-in-view: false
 
-    date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: Europe/Lisbon
+    jackson:
+        serialization:
+            write-dates-as-timestamps: false
+
+        date-format: yyyy-MM-dd HH:mm:ss
+        time-zone: Europe/Lisbon
 
 server:
-  servlet:
-    context-path: /smart-marisco-api
+    servlet:
+        context-path: /smart-marisco-api
 
 logging:
-  level:
-    mz.com.sgp: DEBUG
+    level:
+        mz.com.sgp: DEBUG
 
 cors:
-  originPatterns:  "*"
+    originPatterns: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+security:
+    jwt:
+        token:
+            secret-key: ${JWT_SECRET}
+            issuer: smart-marisco-api
+            audience: smart-marisco-client
+            expire-length: 900000
+            refresh-length: 10800000
+    bootstrap-admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+
+springdoc:
+    api-docs:
+        enabled: ${API_DOCS_ENABLED:false}
+    swagger-ui:
+        enabled: ${API_DOCS_ENABLED:false}

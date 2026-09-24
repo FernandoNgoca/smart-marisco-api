@@ -1,12 +1,13 @@
 package mz.com.sgp.config;
 
-import java.util.HashMap;
 import java.util.Map;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -16,32 +17,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
+import mz.com.sgp.security.AuthRateLimitFilter;
 import mz.com.sgp.security.jwt.JwtTokenFilter;
 import mz.com.sgp.security.jwt.JwtTokenProvider;
 
 @EnableWebSecurity
+@EnableMethodSecurity
 @Configuration
 public class SecurityConfig {
-
-    private final JwtTokenProvider tokenProvider;
-
-    public SecurityConfig(JwtTokenProvider tokenProvider) {
-        this.tokenProvider = tokenProvider;
-    }
-
     @Bean
     PasswordEncoder passwordEncoder() {
-        PasswordEncoder pbkdf2Encoder = new Pbkdf2PasswordEncoder(
-                "", 8, 185000,
+        PasswordEncoder legacy = new Pbkdf2PasswordEncoder("", 8, 185000,
                 Pbkdf2PasswordEncoder.SecretKeyFactoryAlgorithm.PBKDF2WithHmacSHA256);
-
-        Map<String, PasswordEncoder> encoders = new HashMap<>();
-        encoders.put("pbkdf2", pbkdf2Encoder);
-        DelegatingPasswordEncoder passwordEncoder = new DelegatingPasswordEncoder("pbkdf2", encoders);
-
-        passwordEncoder.setDefaultPasswordEncoderForMatches(pbkdf2Encoder);
-        return passwordEncoder;
+        PasswordEncoder current = new Pbkdf2PasswordEncoder("", 16, 600000,
+                Pbkdf2PasswordEncoder.SecretKeyFactoryAlgorithm.PBKDF2WithHmacSHA256);
+        DelegatingPasswordEncoder encoder = new DelegatingPasswordEncoder("pbkdf2-v2",
+                Map.of("pbkdf2", legacy, "pbkdf2-v2", current));
+        encoder.setDefaultPasswordEncoderForMatches(legacy);
+        return encoder;
     }
 
     @Bean
@@ -50,37 +43,28 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        JwtTokenFilter filter = new JwtTokenFilter(tokenProvider);
-        
-        // @formatter:off
-        return http
-                .httpBasic(AbstractHttpConfigurer::disable)
+    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtTokenProvider tokens) throws Exception {
+        return http.httpBasic(AbstractHttpConfigurer::disable)
+                // Tokens are supplied in Authorization, never automatically in cookies.
                 .csrf(AbstractHttpConfigurer::disable)
-                .anonymous(AbstractHttpConfigurer::disable)
-                .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authorize -> authorize
-                        // Rotas públicas (acesso liberado sem autenticação)
-                        .requestMatchers(
-                                "/auth/signin",
-                                "/auth/refresh/**",
-                                "/auth/createUser",
-                                "/auth/change-password",
-                                "/auth/update-user",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui.html"
-                        ).permitAll()
-                        // Rotas que exigem autenticação
-                        .requestMatchers("/api/**").authenticated()
-                        // Rotas bloqueadas para todos
-                        .requestMatchers("/users").denyAll()
-                        // Qualquer outra rota exige autenticação (ou permita se for o caso)
-                        .anyRequest().authenticated()  // ← MUDEI de permitAll() para authenticated()
-                )
-                .cors(cors -> cors.configure(http))
-                .build();
-        // @formatter:on
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new JwtTokenFilter(tokens), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new AuthRateLimitFilter(), JwtTokenFilter.class)
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint((req, res, ex) -> res.sendError(401, "Autenticação necessária"))
+                        .accessDeniedHandler((req, res, ex) -> res.sendError(403, "Acesso negado")))
+                .authorizeHttpRequests(a -> a
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/signin").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/auth/refresh/*").permitAll()
+                        .requestMatchers("/auth/createUser", "/auth", "/auth/").hasRole("ADMIN")
+                        .requestMatchers("/auth/change-password", "/auth/update-user").authenticated()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "MANAGER", "USER")
+                        .requestMatchers(HttpMethod.POST, "/api/sale/v1", "/api/client/v1")
+                            .hasAnyRole("ADMIN", "MANAGER", "USER")
+                        .requestMatchers("/api/**").hasAnyRole("ADMIN", "MANAGER")
+                        .anyRequest().denyAll())
+                .cors(Customizer.withDefaults()).build();
     }
 }

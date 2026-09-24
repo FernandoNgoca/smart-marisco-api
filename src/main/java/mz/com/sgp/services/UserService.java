@@ -20,7 +20,7 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         var user = repository.findByUsername(username);
-        if (user != null) return user;
+        if (user != null && user.getStatus() == mz.com.sgp.config.audit.entity.EntityState.ACTIVE) return user;
         else throw new UsernameNotFoundException("Username "+ username +" not found!");
     }
 }

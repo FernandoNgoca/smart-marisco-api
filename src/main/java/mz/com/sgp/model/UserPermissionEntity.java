@@ -8,7 +8,7 @@ import jakarta.persistence.Table;
 import mz.com.sgp.config.audit.entity.AuditableEntity;
 
 @Entity
-@Table(name = "user_permission")
+@Table(name = "USER_PERMISSION")
 public class UserPermissionEntity extends AuditableEntity {
 
 	/**
