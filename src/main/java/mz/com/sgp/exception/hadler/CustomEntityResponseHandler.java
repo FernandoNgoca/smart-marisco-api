@@ -35,6 +35,11 @@ public class CustomEntityResponseHandler extends ResponseEntityExceptionHandler 
         return response("Acesso negado", HttpStatus.FORBIDDEN, request);
     }
 
+    @ExceptionHandler(mz.com.sgp.exception.InvalidQuantityException.class)
+    public ResponseEntity<ExceptionResponse> invalidQuantity(mz.com.sgp.exception.InvalidQuantityException ex, WebRequest request) {
+        return response(ex.getMessage(), HttpStatus.BAD_REQUEST, request);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ExceptionResponse> invalid(Exception ex, WebRequest request) {
         return response("Dados inválidos", HttpStatus.BAD_REQUEST, request);

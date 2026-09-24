@@ -1,5 +1,7 @@
 package mz.com.sgp.services;
 
+import mz.com.sgp.validation.QuantityRules;
+
 import static mz.com.sgp.mapper.ObjectMapper.parseObject;
 
 import java.time.DayOfWeek;
@@ -59,6 +61,8 @@ public class SaleServices {
 
 	@Transactional
 	public SaleDTO create(SaleDTO sale, List<SaleItemDTO> saleItems) {
+        if (saleItems == null || saleItems.isEmpty()) throw new IllegalArgumentException("Artigos obrigatórios");
+        saleItems.forEach(item -> QuantityRules.positive(item == null ? null : item.getQuantity()));
 		logger.info("Iniciando criação da venda...");
 
 		var entity = parseObject(sale, SaleEntity.class);

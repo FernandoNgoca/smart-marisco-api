@@ -1,5 +1,7 @@
 package mz.com.sgp.services;
 
+import mz.com.sgp.validation.QuantityRules;
+
 import static mz.com.sgp.mapper.ObjectMapper.parseListObjects;
 
 import java.math.BigDecimal;
@@ -26,6 +28,8 @@ public class SaleItemServices {
 	private SaleItemRepository saleItemRepository;
 
 	public List<SaleItemDTO> create(List<SaleItemDTO> saleItems) {
+        if (saleItems == null || saleItems.isEmpty()) throw new IllegalArgumentException("Artigos obrigatórios");
+        saleItems.forEach(item -> QuantityRules.positive(item == null ? null : item.getQuantity()));
 
 		logger.info("Foi criado um : " + saleItems);
 

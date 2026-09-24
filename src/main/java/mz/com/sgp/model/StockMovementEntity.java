@@ -33,7 +33,7 @@ public class StockMovementEntity extends AuditableEntity {
 	@Column(name = "MOVEMENT_TYPE", nullable = false)
 	private MovementType type;
 
-	@Column(name = "QUANTITY", nullable = false)
+	@Column(name = "QUANTITY", nullable = false, precision = 10, scale = 3)
 	private BigDecimal quantity;
 
 	@Column(name = "DESCRIPTION", length = 255)

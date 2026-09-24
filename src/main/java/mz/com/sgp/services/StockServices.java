@@ -1,5 +1,7 @@
 package mz.com.sgp.services;
 
+import mz.com.sgp.validation.QuantityRules;
+
 import static mz.com.sgp.mapper.ObjectMapper.parseObject;
 
 import org.slf4j.Logger;
@@ -55,6 +57,7 @@ public class StockServices {
 
 	@Transactional
 	public StockDTO create(StockDTO stock) {
+        QuantityRules.stock(stock == null ? null : stock.getQuantity());
 		logger.info("Foi criado um Estoque: " + stock);
 
 		var entity = parseObject(stock, StockEntity.class);
@@ -73,6 +76,7 @@ public class StockServices {
 	}
 
 	public StockDTO update(StockDTO stock) {
+        QuantityRules.stock(stock == null ? null : stock.getQuantity());
 
 		logger.info("Atualizando Estoque!");
 		StockEntity entity = stockRepository.findById(stock.getId())

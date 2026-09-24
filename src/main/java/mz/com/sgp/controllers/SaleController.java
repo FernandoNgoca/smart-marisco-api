@@ -1,6 +1,9 @@
 package mz.com.sgp.controllers;
 
 import java.util.List;
+import java.security.Principal;
+import org.springframework.web.bind.annotation.RequestHeader;
+import mz.com.sgp.services.SaleOperationService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -32,9 +35,13 @@ public class SaleController {
 	@Autowired
 	private SaleServices saleServices;
 
+	@Autowired
+	private SaleOperationService saleOperations;
+
 	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public SaleDTO create(@RequestBody SaleRequestDTO saleRequestDTO) {
-		return saleServices.create(saleRequestDTO.getSale(), saleRequestDTO.getItems());
+	public SaleDTO create(@RequestBody SaleRequestDTO saleRequestDTO,
+            @RequestHeader("Idempotency-Key") String operationKey, Principal principal) {
+		return saleOperations.create(principal.getName(), operationKey, saleRequestDTO);
 	}
 
 	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)

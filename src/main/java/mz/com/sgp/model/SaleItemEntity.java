@@ -27,7 +27,7 @@ public class SaleItemEntity extends AuditableEntity {
 	@Column(name = "PRODUCT_ID", nullable = false)
 	private Long productId;
 
-	@Column(name = "QUANTITY", nullable = false)
+	@Column(name = "QUANTITY", nullable = false, precision = 10, scale = 3)
 	private BigDecimal quantity;
 
 	@ManyToOne(fetch = FetchType.EAGER)

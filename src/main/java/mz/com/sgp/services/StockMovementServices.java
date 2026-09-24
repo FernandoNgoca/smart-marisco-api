@@ -1,5 +1,7 @@
 package mz.com.sgp.services;
 
+import mz.com.sgp.validation.QuantityRules;
+
 import static mz.com.sgp.mapper.ObjectMapper.parseObject;
 
 import org.slf4j.Logger;
@@ -50,25 +52,22 @@ public class StockMovementServices {
 
 		logger.info("Foi adicionado um novo movimento: " + stockMovement);
 
-		var entity = parseObject(stockMovement, StockMovementEntity.class);
+        QuantityRules.positive(stockMovement == null ? null : stockMovement.getQuantity());
+        if (stockMovement.getType() == null) throw new IllegalArgumentException("Tipo de movimento obrigatório");
+        StockDTO stockDTO = stockServices.findById(stockMovement.getStockId());
+        stockDTO.setQuantity(QuantityRules.balance(stockDTO.getQuantity(), stockMovement.getQuantity(),
+                stockMovement.getType() == MovementType.ENTRY));
 
-		var dto = parseObject(stockMovementRepository.save(entity), StockMovementDTO.class);
-
-		StockDTO stockDTO = stockServices.findById(dto.getStockId());
-
-		if (dto.getType().equals(MovementType.EXIT)) {
-			stockDTO.setQuantity(stockDTO.getQuantity().subtract(dto.getQuantity()));
-		} else {
-			stockDTO.setQuantity(stockDTO.getQuantity().add(dto.getQuantity()));
-		}
-
-		this.stockServices.update(stockDTO);
+        var entity = parseObject(stockMovement, StockMovementEntity.class);
+        var dto = parseObject(stockMovementRepository.save(entity), StockMovementDTO.class);
+        this.stockServices.update(stockDTO);
 
 		// addHateoasLinks(dto);
 		return dto;
 	}
 
 	public StockMovementDTO update(StockMovementDTO stockMovement) {
+        QuantityRules.positive(stockMovement == null ? null : stockMovement.getQuantity());
 
 		logger.info("Atualizando Estoque!");
 		StockMovementEntity entity = stockMovementRepository.findById(stockMovement.getId()).orElseThrow(

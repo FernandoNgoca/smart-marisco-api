@@ -14,3 +14,5 @@ security:
         token:
             secret-key: dGVzdC1vbmx5LXNlY3JldC1uZXZlci11c2UtaW4tcHJvZHVjdGlvbg==
     bootstrap-admin-password: ""
+cors:
+    originPatterns: http://localhost:5173
