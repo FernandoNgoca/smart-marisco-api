@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import mz.com.sgp.security.AuthRateLimitFilter;
 import mz.com.sgp.security.jwt.JwtTokenFilter;
@@ -60,10 +61,13 @@ public class SecurityConfig {
                         .requestMatchers("/auth/createUser", "/auth", "/auth/").hasRole("ADMIN")
                         .requestMatchers("/auth/change-password", "/auth/update-user").authenticated()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "MANAGER", "USER")
-                        .requestMatchers(HttpMethod.POST, "/api/sale/v1", "/api/client/v1")
-                            .hasAnyRole("ADMIN", "MANAGER", "USER")
-                        .requestMatchers("/api/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/api/reports/**").access(new WebExpressionAuthorizationManager("!hasRole('ADMIN') and hasRole('MANAGER')"))
+                        .requestMatchers(HttpMethod.GET, "/api/**").access(new WebExpressionAuthorizationManager("!hasRole('ADMIN') and hasAnyRole('MANAGER', 'USER')"))
+                        .requestMatchers(HttpMethod.POST, "/api/sale/v1/orders/*/complete", "/api/sale/v1/orders/*/cancel", "/api/sale/v1", "/api/client/v1", "/api/stock/v1", "/api/stockMovement/v1")
+                            .access(new WebExpressionAuthorizationManager("!hasRole('ADMIN') and hasAnyRole('MANAGER', 'USER')"))
+                        .requestMatchers(HttpMethod.PUT, "/api/stock/v1", "/api/sale/v1/orders/*")
+                            .access(new WebExpressionAuthorizationManager("!hasRole('ADMIN') and hasAnyRole('MANAGER', 'USER')"))
+                        .requestMatchers("/api/**").access(new WebExpressionAuthorizationManager("!hasRole('ADMIN') and hasRole('MANAGER')"))
                         .anyRequest().denyAll())
                 .cors(Customizer.withDefaults()).build();
     }

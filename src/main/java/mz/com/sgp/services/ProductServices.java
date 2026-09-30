@@ -36,6 +36,10 @@ public class ProductServices {
 	@Autowired
 	PagedResourcesAssembler<ProductDTO> assembler;
 
+    public java.util.List<ProductDTO> orderProducts() {
+        return parseListObjects(productRepository.findByStatus(EntityState.ACTIVE), ProductDTO.class);
+    }
+
 	public PagedModel<EntityModel<ProductDTO>> findAll(Pageable pageable, String search) {
 
 		Page<ProductEntity> product;

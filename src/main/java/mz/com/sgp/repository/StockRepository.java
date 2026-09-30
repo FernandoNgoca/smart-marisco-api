@@ -12,6 +12,14 @@ import mz.com.sgp.config.audit.entity.EntityState;
 import mz.com.sgp.model.StockEntity;
 
 public interface StockRepository extends JpaRepository<StockEntity, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM StockEntity s WHERE s.productId = :productId AND s.status = mz.com.sgp.config.audit.entity.EntityState.ACTIVE")
+    Optional<StockEntity> lockByProductId(@Param("productId") Long productId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM StockEntity s WHERE s.id = :id AND s.status = mz.com.sgp.config.audit.entity.EntityState.ACTIVE")
+    Optional<StockEntity> lockById(@Param("id") Long id);
+
 
 	@Query("SELECT p FROM StockEntity p WHERE p.status = :status")
 	Page<StockEntity> findAll(Pageable pageable, @Param("status") EntityState status);

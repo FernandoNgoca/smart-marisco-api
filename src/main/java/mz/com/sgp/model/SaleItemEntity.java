@@ -37,6 +37,11 @@ public class SaleItemEntity extends AuditableEntity {
 	@Column(name = "SALE_ID", nullable = false)
 	private Long saleId;
 
+    @Column(name = "UNIT_PRICE", precision = 19, scale = 2)
+    private BigDecimal unitPrice;
+    public BigDecimal getUnitPrice() { return unitPrice; }
+    public void setUnitPrice(BigDecimal value) { unitPrice = value; }
+
 	public ProductEntity getProduct() {
 		return product;
 	}

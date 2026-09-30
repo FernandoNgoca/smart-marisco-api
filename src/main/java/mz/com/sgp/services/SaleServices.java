@@ -59,46 +59,13 @@ public class SaleServices {
 	@Autowired
 	PagedResourcesAssembler<SaleDTO> assembler;
 
-	@Transactional
-	public SaleDTO create(SaleDTO sale, List<SaleItemDTO> saleItems) {
-        if (saleItems == null || saleItems.isEmpty()) throw new IllegalArgumentException("Artigos obrigatórios");
-        saleItems.forEach(item -> QuantityRules.positive(item == null ? null : item.getQuantity()));
-		logger.info("Iniciando criação da venda...");
+    @Autowired
+    private OrderLifecycleService orderLifecycle;
 
-		var entity = parseObject(sale, SaleEntity.class);
-		entity = saleRepository.save(entity);
-
-		try {
-			for (SaleItemDTO itemDTO : saleItems) {
-				itemDTO.setSaleId(entity.getId());
-
-				StockEntity stockEntity = stockRepository
-						.findFirstByProductIdAndStatus(itemDTO.getProductId(), EntityState.ACTIVE)
-						.orElseThrow(() -> new ResourceNotFoundException(
-								"Estoque não encontrado para produto ID: " + itemDTO.getProductId()));
-
-				if (stockEntity.getQuantity().compareTo(itemDTO.getQuantity()) < 0) {
-					throw new RuntimeException("Stock insuficiente para o produto ID " + itemDTO.getProductId()
-							+ ". Disponível: " + stockEntity.getQuantity() + ", solicitado: " + itemDTO.getQuantity());
-				}
-
-				// Criar movimento de stock
-				StockMovementDTO movement = new StockMovementDTO();
-				movement.setQuantity(itemDTO.getQuantity());
-				movement.setType(MovementType.EXIT);
-				movement.setStockId(stockEntity.getId()); // ✅ Usar ID do estoque, não do produto
-
-				stockMovementServices.create(movement);
-			}
-
-			saleItemServices.create(saleItems);
-			return parseObject(entity, SaleDTO.class);
-
-		} catch (Exception e) {
-			logger.error("Erro ao processar venda: {}", e.getMessage(), e);
-			throw e; // Garante rollback consistente
-		}
-	}
+    @Transactional
+    public SaleDTO create(SaleDTO sale, List<SaleItemDTO> saleItems) {
+        return orderLifecycle.create(sale, saleItems);
+    }
 
 	public PagedModel<EntityModel<SaleDTO>> findAll(Pageable pageable, String search) {
 
@@ -233,9 +200,9 @@ public class SaleServices {
 		Page<SaleEntity> sale;
 
 		if (search != null && !search.isBlank()) {
-			sale = saleRepository.searchOrders(search.toLowerCase(), EntityState.ACTIVE, pageable, SaleStatus.ORDERS);
+			sale = saleRepository.searchOrders(search.toLowerCase(), EntityState.ACTIVE, pageable);
 		} else {
-			sale = saleRepository.findAllOrders(pageable, EntityState.ACTIVE, SaleStatus.ORDERS);
+			sale = saleRepository.findAllOrders(pageable, EntityState.ACTIVE);
 		}
 
 		return buildPagedModel(pageable, sale, search);

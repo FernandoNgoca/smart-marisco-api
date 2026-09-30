@@ -25,6 +25,10 @@ public class SaleItemDTO extends AuditableDTO<SaleItemDTO> {
 
 	private Long saleId;
 
+    private BigDecimal unitPrice;
+    public BigDecimal getUnitPrice() { return unitPrice; }
+    public void setUnitPrice(BigDecimal value) { unitPrice = value; }
+
 	public Long getProductId() {
 		return productId;
 	}

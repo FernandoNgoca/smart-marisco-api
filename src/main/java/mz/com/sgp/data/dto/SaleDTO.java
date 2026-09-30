@@ -27,6 +27,25 @@ public class SaleDTO extends AuditableDTO<SaleDTO> {
 	@Enumerated(EnumType.STRING)
 	private SaleStatus saleStatus;
 
+    private boolean orderRecord;
+    public boolean getOrderRecord() { return orderRecord; }
+    public void setOrderRecord(boolean value) { orderRecord = value; }
+
+    private boolean stockDeducted;
+    public boolean getStockDeducted() { return stockDeducted; }
+    public void setStockDeducted(boolean value) { stockDeducted = value; }
+
+    private Long version;
+    public Long getVersion() { return version; }
+    public void setVersion(Long value) { version = value; }
+
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(using = com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer.class)
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer.class)
+    private java.time.LocalDateTime completedDate;
+    public java.time.LocalDateTime getCompletedDate() { return completedDate; }
+    public void setCompletedDate(java.time.LocalDateTime value) { completedDate = value; }
+
 	public ClientDTO getClient() {
 		return client;
 	}

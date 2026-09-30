@@ -31,6 +31,25 @@ import mz.com.sgp.services.SaleServices;
 @RequestMapping("api/sale/v1")
 @Tag(name = "Sale", description = "Endpoints for Managing Sale")
 public class SaleController {
+    @Autowired private mz.com.sgp.services.OrderLifecycleService orders;
+    public record OrderVersion(Long version) { }
+
+    @GetMapping("/orders/{id}")
+    public SaleRequestDTO order(@org.springframework.web.bind.annotation.PathVariable Long id) { return orders.detail(id); }
+
+    @org.springframework.web.bind.annotation.PutMapping("/orders/{id}")
+    public SaleDTO updateOrder(@org.springframework.web.bind.annotation.PathVariable Long id, @RequestBody SaleRequestDTO request) {
+        return orders.update(id, request);
+    }
+    @PostMapping("/orders/{id}/complete")
+    public SaleDTO completeOrder(@org.springframework.web.bind.annotation.PathVariable Long id, @RequestBody OrderVersion request) {
+        return orders.complete(id, request.version());
+    }
+    @PostMapping("/orders/{id}/cancel")
+    public SaleDTO cancelOrder(@org.springframework.web.bind.annotation.PathVariable Long id, @RequestBody OrderVersion request) {
+        return orders.cancel(id, request.version());
+    }
+
 
 	@Autowired
 	private SaleServices saleServices;
@@ -53,7 +72,7 @@ public class SaleController {
 			@RequestParam(value = "search", required = false) String search) {
 		var sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortField));
+		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, saleSortField(sortField)));
 
 		return ResponseEntity.ok(saleServices.findAll(pageable, search));
 	}
@@ -102,7 +121,7 @@ public class SaleController {
 			@RequestParam(value = "search", required = false) String search) {
 		var sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortField));
+		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, saleSortField(sortField)));
 
 		return ResponseEntity.ok(saleServices.findAllOrders(pageable, search));
 	}
@@ -111,4 +130,14 @@ public class SaleController {
 	public long countByStatusAndSaleStatus() {
 		return saleServices.countByStatusAndSaleStatus();
 	}
+    private String saleSortField(String field) {
+        return switch (field) {
+            case "name", "firstName", "client.firstName" -> "client.firstName";
+            case "lastName", "client.lastName" -> "client.lastName";
+            case "phoneNumber", "client.phoneNumber" -> "client.phoneNumber";
+            case "date", "createdDate" -> "createdDate";
+            case "totalValue", "saleStatus", "id" -> field;
+            default -> "id";
+        };
+    }
 }

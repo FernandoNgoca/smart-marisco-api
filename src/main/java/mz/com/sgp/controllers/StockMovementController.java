@@ -41,7 +41,8 @@ public class StockMovementController {
 
 	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public StockMovementDTO create(@RequestBody StockMovementDTO stockMovement) {
-		return stockMovementServices.create(stockMovement);
+		stockMovement.setDescription("Movimento manual");
+        return stockMovementServices.create(stockMovement);
 	}
 
 	@GetMapping(value = "/product/{productId}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -55,4 +56,15 @@ public class StockMovementController {
 
 		return ResponseEntity.ok(stockMovementServices.findByStockIdAndStatus(productId, EntityState.ACTIVE, pageable));
 	}
+
+    @GetMapping(value = "/product/{productId}/history", produces = MediaType.APPLICATION_JSON_VALUE)
+    public StockMovementServices.History history(@PathVariable Long productId,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) mz.com.sgp.model.MovementType type,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to) {
+        if (page < 0 || size < 1 || size > 100 || (from != null && to != null && from.isAfter(to)))
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Filtros inválidos");
+        return stockMovementServices.history(productId, page, size, type, from, to);
+    }
 }
