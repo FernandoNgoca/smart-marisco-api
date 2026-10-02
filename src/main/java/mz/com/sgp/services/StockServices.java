@@ -1,5 +1,7 @@
 package mz.com.sgp.services;
 
+import mz.com.sgp.validation.QuantityRules;
+
 import static mz.com.sgp.mapper.ObjectMapper.parseObject;
 
 import org.slf4j.Logger;
@@ -55,6 +57,7 @@ public class StockServices {
 
 	@Transactional
 	public StockDTO create(StockDTO stock) {
+        QuantityRules.stock(stock == null ? null : stock.getQuantity());
 		logger.info("Foi criado um Estoque: " + stock);
 
 		var entity = parseObject(stock, StockEntity.class);
@@ -65,6 +68,7 @@ public class StockServices {
 		mov.setStockId(savedEntity.getId());
 		mov.setQuantity(savedEntity.getQuantity());
 		mov.setType(MovementType.ENTRY);
+        mov.setDescription("Stock inicial");
 
 		var movEntity = parseObject(mov, StockMovementEntity.class);
 		stockMovementRepository.save(movEntity);
@@ -72,10 +76,12 @@ public class StockServices {
 		return parseObject(savedEntity, StockDTO.class);
 	}
 
+	@Transactional
 	public StockDTO update(StockDTO stock) {
+        QuantityRules.stock(stock == null ? null : stock.getQuantity());
 
 		logger.info("Atualizando Estoque!");
-		StockEntity entity = stockRepository.findById(stock.getId())
+		StockEntity entity = stockRepository.lockById(stock.getId())
 				.orElseThrow(() -> new ResourceNotFoundException("Não encontrado estoque para esse Id!"));
 
 		entity.setProductId(stock.getProductId());

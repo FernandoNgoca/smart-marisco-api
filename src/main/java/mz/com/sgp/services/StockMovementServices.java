@@ -1,5 +1,7 @@
 package mz.com.sgp.services;
 
+import mz.com.sgp.validation.QuantityRules;
+
 import static mz.com.sgp.mapper.ObjectMapper.parseObject;
 
 import org.slf4j.Logger;
@@ -38,6 +40,8 @@ public class StockMovementServices {
 	@Autowired
 	private StockServices stockServices;
 
+    @Autowired private mz.com.sgp.repository.StockRepository stocks;
+
 	public PagedModel<EntityModel<StockMovementDTO>> findAll(Pageable pageable) {
 		logger.info("A obter todos os Movimentos do Produto!");
 
@@ -50,25 +54,23 @@ public class StockMovementServices {
 
 		logger.info("Foi adicionado um novo movimento: " + stockMovement);
 
-		var entity = parseObject(stockMovement, StockMovementEntity.class);
+        QuantityRules.positive(stockMovement == null ? null : stockMovement.getQuantity());
+        if (stockMovement.getType() == null) throw new IllegalArgumentException("Tipo de movimento obrigatório");
+        StockDTO stockDTO = parseObject(stocks.lockById(stockMovement.getStockId())
+            .orElseThrow(() -> new ResourceNotFoundException("Stock não encontrado")), StockDTO.class);
+        stockDTO.setQuantity(QuantityRules.balance(stockDTO.getQuantity(), stockMovement.getQuantity(),
+                stockMovement.getType() == MovementType.ENTRY));
 
-		var dto = parseObject(stockMovementRepository.save(entity), StockMovementDTO.class);
-
-		StockDTO stockDTO = stockServices.findById(dto.getStockId());
-
-		if (dto.getType().equals(MovementType.EXIT)) {
-			stockDTO.setQuantity(stockDTO.getQuantity().subtract(dto.getQuantity()));
-		} else {
-			stockDTO.setQuantity(stockDTO.getQuantity().add(dto.getQuantity()));
-		}
-
-		this.stockServices.update(stockDTO);
+        var entity = parseObject(stockMovement, StockMovementEntity.class);
+        var dto = parseObject(stockMovementRepository.save(entity), StockMovementDTO.class);
+        this.stockServices.update(stockDTO);
 
 		// addHateoasLinks(dto);
 		return dto;
 	}
 
 	public StockMovementDTO update(StockMovementDTO stockMovement) {
+        QuantityRules.positive(stockMovement == null ? null : stockMovement.getQuantity());
 
 		logger.info("Atualizando Estoque!");
 		StockMovementEntity entity = stockMovementRepository.findById(stockMovement.getId()).orElseThrow(
@@ -121,4 +123,30 @@ public class StockMovementServices {
 				.withSelfRel();
 		return assembler.toModel(stockMovementWithLinks, findAllLink);
 	}
+
+    public record History(java.util.List<StockMovementDTO> items, long totalElements,
+            long movements, java.math.BigDecimal entries, java.math.BigDecimal exits) {}
+
+    public History history(Long productId, int page, int size, MovementType type,
+            java.time.LocalDate from, java.time.LocalDate to) {
+        org.springframework.data.jpa.domain.Specification<StockMovementEntity> filter = (root, query, cb) -> {
+            var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
+            predicates.add(cb.equal(root.get("stock").get("product").get("id"), productId));
+            predicates.add(cb.equal(root.get("status"), EntityState.ACTIVE));
+            if (type != null) predicates.add(cb.equal(root.get("type"), type));
+            if (from != null) predicates.add(cb.greaterThanOrEqualTo(root.get("createdDate"), from.atStartOfDay()));
+            if (to != null) predicates.add(cb.lessThan(root.get("createdDate"), to.plusDays(1).atStartOfDay()));
+            return cb.and(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));
+        };
+        var results = stockMovementRepository.findAll(filter, org.springframework.data.domain.PageRequest.of(page, size,
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdDate", "id")));
+        var totals = stockMovementRepository.totals(productId);
+        var dtos = results.getContent().stream().map(entity -> {
+            var dto = parseObject(entity, StockMovementDTO.class);
+            dto.setDescription(entity.getDescription());
+            dto.setCreatedBy(entity.getCreatedBy());
+            return dto;
+        }).toList();
+        return new History(dtos, results.getTotalElements(), totals.getMovements(), totals.getEntries(), totals.getExits());
+    }
 }

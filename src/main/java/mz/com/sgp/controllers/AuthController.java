@@ -12,7 +12,6 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -73,17 +72,8 @@ public class AuthController implements AuthControllerDocs {
 
 	@PutMapping(value = "/change-password", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDTO password) {
-		try {
-			service.changePassword(password);
-			return ResponseEntity.ok(Map.of("message", "Senha alterada com sucesso!"));
-		} catch (IllegalArgumentException e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
-		} catch (UsernameNotFoundException e) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(Map.of("message", "Erro ao alterar a senha"));
-		}
+	        service.changePassword(password);
+        return ResponseEntity.ok(Map.of("message", "Senha alterada. Inicie sessão novamente."));
 	}
 
 	private boolean parametersAreInvalid(String username, String refreshToken) {
@@ -92,7 +82,8 @@ public class AuthController implements AuthControllerDocs {
 
 	private static boolean credentialsIsInvalid(AccountCredentialsDTO credentials) {
 		return credentials == null || StringUtils.isBlank(credentials.getPassword())
-				|| StringUtils.isBlank(credentials.getUsername());
+				|| StringUtils.isBlank(credentials.getUsername())
+                || credentials.getPassword().length() > 128 || credentials.getUsername().length() > 255;
 	}
 
 	@PutMapping(value = "/update-user",consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

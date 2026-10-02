@@ -19,6 +19,7 @@ public class UserDTO extends AuditableDTO<UserDTO> {
 
 	private String fullName;
 
+	@com.fasterxml.jackson.annotation.JsonIgnore
 	private String password;
 
 	private String image;
