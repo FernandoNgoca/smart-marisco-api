@@ -36,6 +36,30 @@ public class SaleEntity extends AuditableEntity {
 	@Enumerated(EnumType.STRING)
 	private SaleStatus saleStatus;
 
+    @jakarta.persistence.Column(name = "ORDER_RECORD")
+    private boolean orderRecord;
+    public boolean getOrderRecord() { return orderRecord; }
+    public void setOrderRecord(boolean value) { orderRecord = value; }
+
+    @jakarta.persistence.Column(name = "STOCK_DEDUCTED")
+    private boolean stockDeducted;
+    public boolean getStockDeducted() { return stockDeducted; }
+    public void setStockDeducted(boolean value) { stockDeducted = value; }
+
+    @jakarta.persistence.Version
+    @jakarta.persistence.Column(name = "VERSION")
+    private Long version;
+    @Column(name = "EDIT_REVISION")
+    private long editRevision;
+    public void markEdited() { editRevision++; }
+    public Long getVersion() { return version; }
+    public void setVersion(Long value) { version = value; }
+
+    @jakarta.persistence.Column(name = "COMPLETED_DATE")
+    private java.time.LocalDateTime completedDate;
+    public java.time.LocalDateTime getCompletedDate() { return completedDate; }
+    public void setCompletedDate(java.time.LocalDateTime value) { completedDate = value; }
+
 	public ClientEntity getClient() {
 		return client;
 	}

@@ -30,6 +30,11 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
 	Page<ProductEntity> search(@Param("search") String search, @Param("status") EntityState status, Pageable pageable);
 
 	long countByStatus(EntityState status);
+    List<ProductEntity> findByStatus(EntityState status);
+
+    @Query("SELECT COUNT(p) FROM ProductEntity p WHERE p.status = :status AND COALESCE((SELECT SUM(s.quantity) FROM StockEntity s WHERE s.productId = p.id AND s.status = :status), 0) <= :threshold")
+    long countLowStock(@Param("status") EntityState status, @Param("threshold") java.math.BigDecimal threshold);
+
 
 	@Query(value = """
 			SELECT p.*

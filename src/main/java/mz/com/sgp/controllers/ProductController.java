@@ -32,6 +32,9 @@ public class ProductController {
 	@Autowired
 	ProductServices productServices;
 
+    @GetMapping("/orderProducts")
+    public java.util.List<ProductDTO> orderProducts() { return productServices.orderProducts(); }
+
 	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<PagedModel<EntityModel<ProductDTO>>> findAll(
 			@RequestParam(value = "page", defaultValue = "0") Integer page,

@@ -18,10 +18,17 @@ import jakarta.persistence.Table;
 import mz.com.sgp.config.audit.entity.AuditableEntity;
 
 @Entity
-@Table(name = "users")
+@Table(name = "USERS")
 public class UserEntity extends AuditableEntity implements UserDetails {
 
 	private static final long serialVersionUID = 1L;
+
+    @Column(name = "TOKEN_VERSION", nullable = false)
+    private long tokenVersion;
+
+    public long getTokenVersion() { return tokenVersion; }
+    public void setTokenVersion(long tokenVersion) { this.tokenVersion = tokenVersion; }
+
 
 	@Column(name = "user_name", unique = true)
 	private String userName;
@@ -45,7 +52,7 @@ public class UserEntity extends AuditableEntity implements UserDetails {
 	private Boolean enabled;
 
 	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "user_permission", joinColumns = { @JoinColumn(name = "id_user") }, inverseJoinColumns = {
+	@JoinTable(name = "USER_PERMISSION", joinColumns = { @JoinColumn(name = "id_user") }, inverseJoinColumns = {
 			@JoinColumn(name = "id_permission") })
 	private List<PermissionEntity> permissionEntities;
 
@@ -80,22 +87,22 @@ public class UserEntity extends AuditableEntity implements UserDetails {
 
 	@Override
 	public boolean isAccountNonExpired() {
-		return this.accountNonExpired;
+		return Boolean.TRUE.equals(this.accountNonExpired);
 	}
 
 	@Override
 	public boolean isAccountNonLocked() {
-		return this.accountNonLocked;
+		return Boolean.TRUE.equals(this.accountNonLocked);
 	}
 
 	@Override
 	public boolean isCredentialsNonExpired() {
-		return this.credentialsNonExpired;
+		return Boolean.TRUE.equals(this.credentialsNonExpired);
 	}
 
 	@Override
 	public boolean isEnabled() {
-		return this.enabled;
+		return Boolean.TRUE.equals(this.enabled);
 	}
 
 	public void setUserName(String userName) {

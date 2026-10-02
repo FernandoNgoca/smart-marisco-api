@@ -23,6 +23,13 @@ public class StockMovementDTO extends AuditableDTO<StockMovementDTO> {
 	private MovementType type;
 
 	private BigDecimal quantity;
+    private String description;
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    private String createdBy;
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
 
 	public StockMovementDTO() {
 		super();

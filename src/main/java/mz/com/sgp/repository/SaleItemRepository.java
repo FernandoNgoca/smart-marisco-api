@@ -14,7 +14,7 @@ public interface SaleItemRepository extends JpaRepository<SaleItemEntity, Long> 
 
 	@Query("""
 			    SELECT p.id, p.name, p.image, p.salePrice,
-			           SUM(si.quantity), SUM(si.quantity * p.salePrice)
+			           SUM(si.quantity), SUM(si.quantity * si.unitPrice)
 			    FROM SaleItemEntity si
 			    JOIN si.product p
 			    JOIN si.sale s

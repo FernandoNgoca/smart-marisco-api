@@ -10,6 +10,7 @@ public class AccountCredentialsDTO implements Serializable {
 
 	private String username;
 
+	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
 	private String password;
 
 	private String fullname;
