@@ -27,6 +27,7 @@ class DashboardOverviewTests {
         check(data.previous().sales()==1 && data.previous().revenue().intValueExact()==40);
         check(data.previousFrom().equals("2026-09-29") && data.previousTo().equals("2026-09-30"));
         check(data.dailySales().size()==2 && data.dailySales().get(0).value()==0 && data.dailySales().get(1).value()==1);
+        check(data.dailySales().get(0).revenue().signum()==0 && data.dailySales().get(1).revenue().intValueExact()==100);
         check(data.pending().count()==1 && data.pending().value().intValueExact()==300 && data.pending().oldestDays()==12);
         check(data.restockCount()==2 && data.restock().get(0).quantity().signum()==0);
         check(data.restock().get(1).unit().equals("kg"));

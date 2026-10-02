@@ -17,7 +17,7 @@ public class DashboardOverviewService {
     private final JdbcTemplate jdbc;
     public DashboardOverviewService(JdbcTemplate jdbc) { this.jdbc = jdbc; }
     public record Totals(long sales, BigDecimal revenue) {}
-    public record Day(String name, long value) {}
+    public record Day(String name, long value, BigDecimal revenue) {}
     public record Pending(long count, BigDecimal value, Long oldestDays) {}
     public record Product(Long id, String name, String unit, BigDecimal quantity) {}
     public record TopProduct(String name, String unit, BigDecimal quantity) {}
@@ -44,11 +44,11 @@ public class DashboardOverviewService {
         long restockCount = jdbc.queryForObject("SELECT COUNT(*) FROM (SELECT p.ID" + stock + ") low_stock", Long.class);
         var restock = jdbc.query("SELECT p.ID,p.NAME,COALESCE(u.SYMBOL,''),COALESCE(SUM(st.QUANTITY),0) quantity" + stock + " ORDER BY quantity,p.NAME,p.ID LIMIT 5",
             (rs,i) -> new Product(rs.getLong(1),rs.getString(2),rs.getString(3),rs.getBigDecimal(4)));
-        Map<LocalDate,Long> counts = new HashMap<>();
-        jdbc.query("SELECT CAST(COALESCE(s.COMPLETED_DATE,s.CREATED_DATE) AS DATE),COUNT(*)" + SALES + " GROUP BY CAST(COALESCE(s.COMPLETED_DATE,s.CREATED_DATE) AS DATE)",
-            (org.springframework.jdbc.core.RowCallbackHandler) rs -> counts.put(rs.getDate(1).toLocalDate(),rs.getLong(2)), start,end);
+        Map<LocalDate,Day> counts = new HashMap<>();
+        jdbc.query("SELECT CAST(COALESCE(s.COMPLETED_DATE,s.CREATED_DATE) AS DATE),COUNT(*),COALESCE(SUM(s.TOTAL_VALUE),0)" + SALES + " GROUP BY CAST(COALESCE(s.COMPLETED_DATE,s.CREATED_DATE) AS DATE)",
+            (org.springframework.jdbc.core.RowCallbackHandler) rs -> counts.put(rs.getDate(1).toLocalDate(),new Day(rs.getDate(1).toLocalDate().toString(),rs.getLong(2),rs.getBigDecimal(3))), start,end);
         List<Day> daily = new ArrayList<>();
-        for(var date=from; !date.isAfter(to); date=date.plusDays(1)) daily.add(new Day(date.toString(),counts.getOrDefault(date,0L)));
+        for(var date=from; !date.isAfter(to); date=date.plusDays(1)) daily.add(counts.getOrDefault(date,new Day(date.toString(),0L,BigDecimal.ZERO)));
         var top = jdbc.query("SELECT p.NAME,COALESCE(u.SYMBOL,''),SUM(i.QUANTITY) quantity FROM SALE_ITEM i JOIN SALE s ON s.ID=i.SALE_ID JOIN PRODUCT p ON p.ID=i.PRODUCT_ID LEFT JOIN UNIT u ON u.ID=p.UNIT_ID WHERE i.STATUS=1 AND s.STATUS=1 AND s.SALE_STATUS='COMPLETED' AND COALESCE(s.COMPLETED_DATE,s.CREATED_DATE)>=? AND COALESCE(s.COMPLETED_DATE,s.CREATED_DATE)<? GROUP BY p.ID,p.NAME,u.SYMBOL ORDER BY quantity DESC,p.ID LIMIT 5",
             (rs,i) -> new TopProduct(rs.getString(1),rs.getString(2),rs.getBigDecimal(3)),start,end);
         return new Overview(from.toString(),to.toString(),previousStart.toLocalDate().toString(),previousEnd.toLocalDate().minusDays(1).toString(),now.toString(),totals,previous,

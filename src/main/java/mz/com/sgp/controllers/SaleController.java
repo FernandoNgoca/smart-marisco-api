@@ -32,6 +32,9 @@ import mz.com.sgp.services.SaleServices;
 @Tag(name = "Sale", description = "Endpoints for Managing Sale")
 public class SaleController {
     @Autowired private mz.com.sgp.services.OrderLifecycleService orders;
+    @Autowired private mz.com.sgp.services.SaleReceiptService receipts;
+    @GetMapping("/{id}/receipt")
+    public mz.com.sgp.services.SaleReceiptService.Receipt receipt(@org.springframework.web.bind.annotation.PathVariable Long id) { return receipts.receipt(id); }
     public record OrderVersion(Long version) { }
 
     @GetMapping("/orders/{id}")
