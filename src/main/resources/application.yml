@@ -44,7 +44,7 @@ logging:
         mz.com.sgp: DEBUG
 
 cors:
-    originPatterns: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    originPatterns: ${CORS_ALLOWED_ORIGINS:https://smart-marisco-web.onrender.com}
 
 security:
     jwt:
