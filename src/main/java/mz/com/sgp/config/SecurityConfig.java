@@ -58,7 +58,7 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/signin").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/auth/refresh/*").permitAll()
-                        .requestMatchers("/auth/createUser", "/auth", "/auth/").hasRole("ADMIN")
+                        .requestMatchers("/auth/createUser", "/auth", "/auth/", "/auth/users/**").hasRole("ADMIN")
                         .requestMatchers("/auth/change-password", "/auth/update-user").authenticated()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").hasRole("ADMIN")
                         .requestMatchers("/api/reports/**").access(new WebExpressionAuthorizationManager("!hasRole('ADMIN') and hasRole('MANAGER')"))
