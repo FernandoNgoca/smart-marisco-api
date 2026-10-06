@@ -36,6 +36,7 @@ spring:
     time-zone: Europe/Lisbon
 
 server:
+    port: ${PORT:8080}
     servlet:
         context-path: /smart-marisco-api
 
