@@ -17,7 +17,7 @@ public class SaleReceiptService {
     public record Item(String product, String unit, BigDecimal quantity, BigDecimal unitPrice, BigDecimal subtotal) {}
     public record Receipt(long id, String date, String client, String operator, BigDecimal total, BigDecimal roundingAdjustment, List<Item> items) {}
     public Receipt receipt(Long id) {
-        var sales=jdbc.query("SELECT s.ID,COALESCE(s.COMPLETED_DATE,s.CREATED_DATE),COALESCE(CONCAT(c.FIRST_NAME,' ',COALESCE(c.LAST_NAME,'')),'Consumidor final'),COALESCE(s.CREATED_BY,'Não registado'),s.TOTAL_VALUE,s.SALE_STATUS FROM SALE s LEFT JOIN CLIENT c ON c.ID=s.CLIENT_ID WHERE s.ID=? AND s.STATUS=1",(rs,i)->{
+        var sales=jdbc.query("SELECT s.ID,COALESCE(s.COMPLETED_DATE,s.CREATED_DATE),CASE WHEN c.ID IS NULL THEN 'Consumidor final' ELSE TRIM(CONCAT(COALESCE(c.FIRST_NAME,''),' ',COALESCE(c.LAST_NAME,''))) END,COALESCE(s.CREATED_BY,'Não registado'),s.TOTAL_VALUE,s.SALE_STATUS FROM SALE s LEFT JOIN CLIENT c ON c.ID=s.CLIENT_ID WHERE s.ID=? AND s.STATUS=1",(rs,i)->{
             if (!"COMPLETED".equals(rs.getString(6))) throw new ResponseStatusException(HttpStatus.CONFLICT,"O recibo só está disponível para vendas concluídas");
             return new Receipt(rs.getLong(1),rs.getTimestamp(2).toLocalDateTime().toString(),rs.getString(3).trim(),rs.getString(4),rs.getBigDecimal(5),BigDecimal.ZERO,List.of());
         },id);

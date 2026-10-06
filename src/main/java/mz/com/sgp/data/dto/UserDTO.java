@@ -16,6 +16,9 @@ public class UserDTO extends AuditableDTO<UserDTO> {
 	private static final long serialVersionUID = 1L;
 
 	private String userName;
+    private Boolean enabled;
+    public Boolean getEnabled() { return enabled; }
+    public void setEnabled(Boolean enabled) { this.enabled = enabled; }
 
 	private String fullName;
 

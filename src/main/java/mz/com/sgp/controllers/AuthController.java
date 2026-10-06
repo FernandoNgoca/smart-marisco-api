@@ -104,7 +104,9 @@ public class AuthController implements AuthControllerDocs {
 		            ? Sort.Direction.DESC
 		            : Sort.Direction.ASC;
 
-		    Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortField));
+		    if (page < 0 || size < 1 || size > 100 || !java.util.Set.of("userName", "fullName", "id").contains(sortField))
+                throw new IllegalArgumentException("Paginação inválida");
+            Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortField));
 
 		    return ResponseEntity.ok(service.findAll(pageable, search));
 		}
