@@ -10,6 +10,10 @@ import mz.com.sgp.config.audit.entity.EntityState;
 import mz.com.sgp.model.UserEntity;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM UserEntity u WHERE u.id = :id")
+    java.util.Optional<UserEntity> lockById(@Param("id") Long id);
+
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM UserEntity u WHERE u.userName = :userName")
