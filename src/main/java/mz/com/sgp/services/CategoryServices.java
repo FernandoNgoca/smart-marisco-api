@@ -50,6 +50,7 @@ public class CategoryServices {
 		logger.info("Foi criado um cliente: " + category);
 
 		var entity = parseObject(category, CategoryEntity.class);
+		entity.setDescription(category.getDescription() == null ? "" : category.getDescription().trim());
 
 		var dto = parseObject(categoryRepository.save(entity), CategoryDTO.class);
 		// addHateoasLinks(dto);
@@ -63,7 +64,7 @@ public class CategoryServices {
 				.orElseThrow(() -> new ResourceNotFoundException("Não encontrado cliente para esse Id!"));
 
 		entity.setName(category.getName());
-		entity.setDescription(category.getDescription());
+		entity.setDescription(category.getDescription() == null ? "" : category.getDescription().trim());
 
 		return parseObject(categoryRepository.save(entity), CategoryDTO.class);
 	}

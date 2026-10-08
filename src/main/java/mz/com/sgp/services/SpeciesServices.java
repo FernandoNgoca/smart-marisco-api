@@ -53,6 +53,7 @@ public class SpeciesServices {
 		logger.info("Foi criado uma espécie!");
 
 		var entity = parseObject(species, SpeciesEntity.class);
+		entity.setDescription(species.getDescription() == null ? "" : species.getDescription().trim());
 
 		var dto = parseObject(speciesRepository.save(entity), SpeciesDTO.class);
 		// addHateoasLinks(dto);
@@ -66,7 +67,7 @@ public class SpeciesServices {
 				.orElseThrow(() -> new ResourceNotFoundException("Não encotrado nenhuma Espécie!"));
 
 		entity.setName(species.getName());
-		entity.setDescription(species.getDescription());
+		entity.setDescription(species.getDescription() == null ? "" : species.getDescription().trim());
 
 		return parseObject(speciesRepository.save(entity), SpeciesDTO.class);
 	}
