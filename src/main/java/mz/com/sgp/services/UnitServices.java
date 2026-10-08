@@ -50,6 +50,7 @@ public class UnitServices {
 		logger.info("Foi criado um cliente: " + unit);
 
 		var entity = parseObject(unit, UnitEntity.class);
+		entity.setDescription(unit.getDescription() == null ? "" : unit.getDescription().trim());
 
 		var dto = parseObject(unitRepository.save(entity), UnitDTO.class);
 		// addHateoasLinks(dto);
@@ -64,7 +65,7 @@ public class UnitServices {
 
 		entity.setName(unit.getName());
 		entity.setSymbol(unit.getSymbol());
-		entity.setDescription(unit.getDescription());
+		entity.setDescription(unit.getDescription() == null ? "" : unit.getDescription().trim());
 
 		return parseObject(unitRepository.save(entity), UnitDTO.class);
 	}

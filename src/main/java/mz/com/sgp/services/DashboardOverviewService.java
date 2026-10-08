@@ -20,7 +20,7 @@ public class DashboardOverviewService {
     public record Day(String name, long value, BigDecimal revenue) {}
     public record Pending(long count, BigDecimal value, Long oldestDays) {}
     public record Product(Long id, String name, String unit, BigDecimal quantity) {}
-    public record TopProduct(String name, String unit, BigDecimal quantity) {}
+    public record TopProduct(String name, String unit, BigDecimal quantity, String image) {}
     public record Overview(String from, String to, String previousFrom, String previousTo, String updatedAt,
         Totals totals, Totals previous, BigDecimal averageSale, Pending pending, long restockCount,
         List<Product> restock, List<Day> dailySales, List<TopProduct> topProducts) {}
@@ -49,8 +49,8 @@ public class DashboardOverviewService {
             (org.springframework.jdbc.core.RowCallbackHandler) rs -> counts.put(rs.getDate(1).toLocalDate(),new Day(rs.getDate(1).toLocalDate().toString(),rs.getLong(2),rs.getBigDecimal(3))), start,end);
         List<Day> daily = new ArrayList<>();
         for(var date=from; !date.isAfter(to); date=date.plusDays(1)) daily.add(counts.getOrDefault(date,new Day(date.toString(),0L,BigDecimal.ZERO)));
-        var top = jdbc.query("SELECT p.NAME,COALESCE(u.SYMBOL,''),SUM(i.QUANTITY) quantity FROM SALE_ITEM i JOIN SALE s ON s.ID=i.SALE_ID JOIN PRODUCT p ON p.ID=i.PRODUCT_ID LEFT JOIN UNIT u ON u.ID=p.UNIT_ID WHERE i.STATUS=1 AND s.STATUS=1 AND s.SALE_STATUS='COMPLETED' AND COALESCE(s.COMPLETED_DATE,s.CREATED_DATE)>=? AND COALESCE(s.COMPLETED_DATE,s.CREATED_DATE)<? GROUP BY p.ID,p.NAME,u.SYMBOL ORDER BY quantity DESC,p.ID LIMIT 5",
-            (rs,i) -> new TopProduct(rs.getString(1),rs.getString(2),rs.getBigDecimal(3)),start,end);
+        var top = jdbc.query("SELECT ranked.NAME,ranked.unit,ranked.quantity,photo.IMAGE FROM (SELECT p.ID,p.NAME,COALESCE(u.SYMBOL,'') unit,SUM(i.QUANTITY) quantity FROM SALE_ITEM i JOIN SALE s ON s.ID=i.SALE_ID JOIN PRODUCT p ON p.ID=i.PRODUCT_ID LEFT JOIN UNIT u ON u.ID=p.UNIT_ID WHERE i.STATUS=1 AND s.STATUS=1 AND s.SALE_STATUS='COMPLETED' AND COALESCE(s.COMPLETED_DATE,s.CREATED_DATE)>=? AND COALESCE(s.COMPLETED_DATE,s.CREATED_DATE)<? GROUP BY p.ID,p.NAME,u.SYMBOL ORDER BY quantity DESC,p.ID LIMIT 5) ranked JOIN PRODUCT photo ON photo.ID=ranked.ID ORDER BY ranked.quantity DESC,ranked.ID",
+            (rs,i) -> new TopProduct(rs.getString(1),rs.getString(2),rs.getBigDecimal(3),rs.getString(4)),start,end);
         return new Overview(from.toString(),to.toString(),previousStart.toLocalDate().toString(),previousEnd.toLocalDate().minusDays(1).toString(),now.toString(),totals,previous,
             totals.sales()==0 ? BigDecimal.ZERO : totals.revenue().divide(BigDecimal.valueOf(totals.sales()),2,RoundingMode.HALF_UP),pending,restockCount,restock,daily,top);
     }
