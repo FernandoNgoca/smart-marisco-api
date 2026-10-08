@@ -8,12 +8,12 @@ class DashboardOverviewTests {
     private DashboardOverviewService service() {
         var jdbc = new JdbcTemplate(new DriverManagerDataSource("jdbc:h2:mem:"+java.util.UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1","sa",""));
         jdbc.execute("CREATE TABLE SALE(ID BIGINT,STATUS INT,SALE_STATUS VARCHAR,CREATED_DATE TIMESTAMP,COMPLETED_DATE TIMESTAMP,TOTAL_VALUE DECIMAL(12,2))");
-        jdbc.execute("CREATE TABLE PRODUCT(ID BIGINT,NAME VARCHAR,STATUS INT,UNIT_ID BIGINT)");
+        jdbc.execute("CREATE TABLE PRODUCT(ID BIGINT,NAME VARCHAR,STATUS INT,UNIT_ID BIGINT,IMAGE VARCHAR)");
         jdbc.execute("CREATE TABLE UNIT(ID BIGINT,SYMBOL VARCHAR)");
         jdbc.execute("CREATE TABLE STOCK(ID BIGINT,PRODUCT_ID BIGINT,STATUS INT,QUANTITY DECIMAL(10,3))");
         jdbc.execute("CREATE TABLE SALE_ITEM(ID BIGINT,SALE_ID BIGINT,PRODUCT_ID BIGINT,STATUS INT,QUANTITY DECIMAL(10,3))");
         jdbc.update("INSERT INTO UNIT VALUES(1,'kg')");
-        jdbc.update("INSERT INTO PRODUCT VALUES(1,'Camarão',1,1),(2,'Sem stock',1,1),(3,'Inativo',0,1),(4,'Peixe',1,1)");
+        jdbc.update("INSERT INTO PRODUCT VALUES(1,'Camarão',1,1,'photo-base64'),(2,'Sem stock',1,1,NULL),(3,'Inativo',0,1,NULL),(4,'Peixe',1,1,NULL)");
         jdbc.update("INSERT INTO STOCK VALUES(1,1,1,3),(2,3,1,0),(3,4,1,10)");
         jdbc.update("INSERT INTO SALE VALUES(1,1,'COMPLETED','2026-09-01 12:00:00','2026-10-02 10:00:00',100),(2,1,'COMPLETED','2026-09-30 12:00:00',NULL,40),(3,1,'ORDERS','2026-09-20 12:00:00',NULL,300),(4,1,'CANCELED','2026-09-01 12:00:00',NULL,900),(5,0,'ORDERS','2026-08-01 12:00:00',NULL,1000)");
         jdbc.update("INSERT INTO SALE_ITEM VALUES(1,1,1,1,2),(2,2,4,1,1),(3,4,4,1,50)");
@@ -32,7 +32,9 @@ class DashboardOverviewTests {
         check(data.restockCount()==2 && data.restock().get(0).quantity().signum()==0);
         check(data.restock().get(1).unit().equals("kg"));
         check(data.topProducts().size()==1 && data.topProducts().get(0).name().equals("Camarão"));
+        check(data.topProducts().get(0).image().equals("photo-base64"));
         var past=service.overviewAt(LocalDate.of(2026,9,29),LocalDate.of(2026,9,30),now);
+        check(past.topProducts().get(0).image()==null);
         check(past.pending().equals(data.pending()) && past.restock().equals(data.restock()));
         var empty=service.overviewAt(LocalDate.of(2026,9,1),LocalDate.of(2026,9,2),now);
         check(empty.totals().sales()==0 && empty.averageSale().signum()==0);
