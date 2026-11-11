@@ -82,6 +82,33 @@ class OrderLifecycleTests {
             .andExpect(MockMvcResultMatchers.jsonPath("$[?(@.code == 'test-order')].stockQuantity").value(Matchers.contains(10.0)));
     }
 
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void historyFiltersByStatusSaleNumberAndDate() throws Exception {
+        var pending = create("2");
+        var done = create("3");
+        service.complete(done.getId(), done.getVersion());
+        em.flush();
+        var today = java.time.LocalDate.now();
+
+        mvc.perform(MockMvcRequestBuilders.get("/api/sale/v1/findAllOrders")
+                .param("search", "cliente").param("saleStatus", "ORDERS").param("size", "100"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$._embedded.sales[*].id").value(Matchers.hasItem(pending.getId().intValue())))
+            .andExpect(MockMvcResultMatchers.jsonPath("$._embedded.sales[*].id").value(Matchers.not(Matchers.hasItem(done.getId().intValue()))));
+
+        mvc.perform(MockMvcRequestBuilders.get("/api/sale/v1/history/summary")
+                .param("orders", "true").param("search", "#" + done.getId()))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.count").value(1))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.completedTotal").value(300.0));
+
+        mvc.perform(MockMvcRequestBuilders.get("/api/sale/v1")
+                .param("search", String.valueOf(done.getId())).param("from", today.toString()).param("to", today.toString()))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.page.totalElements").value(1));
+        mvc.perform(MockMvcRequestBuilders.get("/api/sale/v1")
+                .param("search", String.valueOf(done.getId())).param("from", today.plusDays(1).toString()))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.page.totalElements").value(0));
+    }
+
     SaleDTO create(String quantity) {
         var sale = new SaleDTO(); sale.setSaleStatus(SaleStatus.ORDERS); sale.setClientId(client.getId()); sale.setTotalValue(BigDecimal.ONE);
         var line = new SaleItemDTO(); line.setProductId(product.getId()); line.setQuantity(new BigDecimal(quantity)); line.setUnitPrice(BigDecimal.ONE);
