@@ -51,9 +51,9 @@ class ReportServiceTests {
     @Test void workbookStoresTextWithoutExecutingFormulas() throws Exception {
         var result=read(service(),"sales","","",0);
         try(var zip=new ZipInputStream(new ByteArrayInputStream(ReportWorkbook.write(result)))) {
-            String sheet="";int entries=0;
-            for(var entry=zip.getNextEntry();entry!=null;entry=zip.getNextEntry()) { entries++;if(entry.getName().endsWith("sheet1.xml")) sheet=new String(zip.readAllBytes(),StandardCharsets.UTF_8); }
-            check(entries==5);check(sheet.contains("=SUM(A1:A9) &lt;Cliente&gt;"));check(!sheet.contains("<f>"));check(sheet.contains("<v>150.00</v>"));
+            String sheet="";var names=new java.util.HashSet<String>();
+            for(var entry=zip.getNextEntry();entry!=null;entry=zip.getNextEntry()) { names.add(entry.getName());if(entry.getName().endsWith("sheet1.xml")) sheet=new String(zip.readAllBytes(),StandardCharsets.UTF_8); }
+            check(names.contains("xl/media/logo.png"));check(names.contains("xl/styles.xml"));check(sheet.contains("<drawing r:id=\"rId1\"/>"));check(sheet.contains("=SUM(A1:A9) &lt;Cliente&gt;"));check(!sheet.contains("<f>"));check(sheet.contains("<v>150.00</v>"));
         }
     }
     @Test void reportAuthorizationOnlyAllowsNonAdministrativeManagers() {
