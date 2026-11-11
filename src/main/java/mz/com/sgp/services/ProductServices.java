@@ -3,7 +3,9 @@ package mz.com.sgp.services;
 import static mz.com.sgp.mapper.ObjectMapper.parseListObjects;
 import static mz.com.sgp.mapper.ObjectMapper.parseObject;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,8 +144,12 @@ public class ProductServices {
 	private PagedModel<EntityModel<ProductDTO>> buildPagedModel(Pageable pageable, Page<ProductEntity> productEntity,
 			String search) {
 
+		var ids = productEntity.map(ProductEntity::getId).toList();
+		var withStock = ids.isEmpty() ? Set.<Long>of() : new HashSet<>(stockRepository.findProductIdsWithStock(ids));
+
 		var products = productEntity.map(p -> {
 			var dto = parseObject(p, ProductDTO.class);
+			dto.setHasStock(withStock.contains(p.getId()));
 			return dto;
 		});
 

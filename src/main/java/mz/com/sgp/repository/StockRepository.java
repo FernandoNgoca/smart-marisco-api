@@ -13,8 +13,12 @@ import mz.com.sgp.model.StockEntity;
 import org.springframework.data.jpa.repository.Lock;
 import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.util.Collection;
 
 public interface StockRepository extends JpaRepository<StockEntity, Long> {
+    @Query("SELECT DISTINCT s.productId FROM StockEntity s WHERE s.productId IN :productIds AND s.quantity <> 0")
+    List<Long> findProductIdsWithStock(@Param("productIds") Collection<Long> productIds);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM StockEntity s WHERE s.productId = :productId ORDER BY s.id")
     List<StockEntity> lockAllByProductId(@Param("productId") Long productId);

@@ -66,6 +66,9 @@ public class StockServices {
         QuantityRules.stock(stock == null ? null : stock.getQuantity());
 		logger.info("Foi criado um Estoque: " + stock);
 
+		if (stock.getProductId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O produto é obrigatório.");
+        }
 		var product = productRepository.lockById(stock.getProductId())
             .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado."));
         if (product.getStatus() != EntityState.ACTIVE) {

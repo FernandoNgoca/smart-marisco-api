@@ -62,6 +62,18 @@ class OrderLifecycleTests {
         assertThat(em.find(StockEntity.class, stock.getId()).getQuantity()).isEqualByComparingTo("10");
     }
 
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void productListShowsWhetherProductHasStock() throws Exception {
+        var path = "$._embedded.products[?(@.code == 'test-order')].hasStock";
+        mvc.perform(MockMvcRequestBuilders.get("/api/product/v1").param("size", "1000"))
+            .andExpect(MockMvcResultMatchers.status().isOk())
+            .andExpect(MockMvcResultMatchers.jsonPath(path).value(Matchers.contains(true)));
+        stock.setQuantity(BigDecimal.ZERO); em.flush();
+        mvc.perform(MockMvcRequestBuilders.get("/api/product/v1").param("size", "1000"))
+            .andExpect(MockMvcResultMatchers.jsonPath(path).value(Matchers.contains(false)));
+    }
+
     SaleDTO create(String quantity) {
         var sale = new SaleDTO(); sale.setSaleStatus(SaleStatus.ORDERS); sale.setClientId(client.getId()); sale.setTotalValue(BigDecimal.ONE);
         var line = new SaleItemDTO(); line.setProductId(product.getId()); line.setQuantity(new BigDecimal(quantity)); line.setUnitPrice(BigDecimal.ONE);

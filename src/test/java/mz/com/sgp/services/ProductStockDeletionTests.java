@@ -74,4 +74,15 @@ class ProductStockDeletionTests {
         assertEquals(409, error.getStatusCode().value());
         verify(stocks, never()).save(any());
     }
+
+    @Test void rejectsStockWithoutProduct() {
+        var products = mock(ProductRepository.class);
+        var service = new StockServices();
+        ReflectionTestUtils.setField(service, "productRepository", products);
+        var stock = new StockDTO();
+        stock.setQuantity(new BigDecimal("5"));
+        var error = assertThrows(ResponseStatusException.class, () -> service.create(stock));
+        assertEquals(400, error.getStatusCode().value());
+        verifyNoInteractions(products);
+    }
 }

@@ -35,6 +35,17 @@ public class ProductDTO extends AuditableDTO<ProductDTO> {
 
 	private Long unitId;
 
+	/** Só leitura: indica se o produto tem saldo de stock diferente de zero. */
+	private Boolean hasStock;
+
+	public Boolean getHasStock() {
+		return hasStock;
+	}
+
+	public void setHasStock(Boolean hasStock) {
+		this.hasStock = hasStock;
+	}
+
 	public String getCode() {
 		return code;
 	}
