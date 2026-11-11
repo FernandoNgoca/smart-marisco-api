@@ -3,8 +3,11 @@ package mz.com.sgp.services;
 import static mz.com.sgp.mapper.ObjectMapper.parseListObjects;
 import static mz.com.sgp.mapper.ObjectMapper.parseObject;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -177,7 +180,15 @@ public class ProductServices {
 		logger.info("Procurar todos Produtos com com estoque.");
 
 		var products = this.productRepository.findAvailableProducts(EntityState.ACTIVE);
-
-		return parseListObjects(products, ProductDTO.class);
+		var dtos = parseListObjects(products, ProductDTO.class);
+		var ids = products.stream().map(ProductEntity::getId).toList();
+		if (!ids.isEmpty()) {
+			Map<Long, BigDecimal> quantities = new HashMap<>();
+			for (Object[] row : stockRepository.sumQuantityByProductId(ids, EntityState.ACTIVE)) {
+				quantities.put((Long) row[0], (BigDecimal) row[1]);
+			}
+			dtos.forEach(dto -> dto.setStockQuantity(quantities.getOrDefault(dto.getId(), BigDecimal.ZERO)));
+		}
+		return dtos;
 	}	
 }

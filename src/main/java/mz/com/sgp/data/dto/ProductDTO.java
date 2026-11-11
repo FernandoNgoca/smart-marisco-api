@@ -46,6 +46,17 @@ public class ProductDTO extends AuditableDTO<ProductDTO> {
 		this.hasStock = hasStock;
 	}
 
+	/** Só leitura: saldo de stock ativo, preenchido em findAvailableProducts. */
+	private BigDecimal stockQuantity;
+
+	public BigDecimal getStockQuantity() {
+		return stockQuantity;
+	}
+
+	public void setStockQuantity(BigDecimal stockQuantity) {
+		this.stockQuantity = stockQuantity;
+	}
+
 	public String getCode() {
 		return code;
 	}

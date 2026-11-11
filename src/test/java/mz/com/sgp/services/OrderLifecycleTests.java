@@ -74,6 +74,14 @@ class OrderLifecycleTests {
             .andExpect(MockMvcResultMatchers.jsonPath(path).value(Matchers.contains(false)));
     }
 
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void availableProductsIncludeStockQuantity() throws Exception {
+        mvc.perform(MockMvcRequestBuilders.get("/api/product/v1/findAvailableProducts"))
+            .andExpect(MockMvcResultMatchers.status().isOk())
+            .andExpect(MockMvcResultMatchers.jsonPath("$[?(@.code == 'test-order')].stockQuantity").value(Matchers.contains(10.0)));
+    }
+
     SaleDTO create(String quantity) {
         var sale = new SaleDTO(); sale.setSaleStatus(SaleStatus.ORDERS); sale.setClientId(client.getId()); sale.setTotalValue(BigDecimal.ONE);
         var line = new SaleItemDTO(); line.setProductId(product.getId()); line.setQuantity(new BigDecimal(quantity)); line.setUnitPrice(BigDecimal.ONE);

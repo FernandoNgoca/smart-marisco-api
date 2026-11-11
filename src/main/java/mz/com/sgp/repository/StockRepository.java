@@ -19,6 +19,9 @@ public interface StockRepository extends JpaRepository<StockEntity, Long> {
     @Query("SELECT DISTINCT s.productId FROM StockEntity s WHERE s.productId IN :productIds AND s.quantity <> 0")
     List<Long> findProductIdsWithStock(@Param("productIds") Collection<Long> productIds);
 
+    @Query("SELECT s.productId, SUM(s.quantity) FROM StockEntity s WHERE s.productId IN :productIds AND s.status = :status GROUP BY s.productId")
+    List<Object[]> sumQuantityByProductId(@Param("productIds") Collection<Long> productIds, @Param("status") EntityState status);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM StockEntity s WHERE s.productId = :productId ORDER BY s.id")
     List<StockEntity> lockAllByProductId(@Param("productId") Long productId);
