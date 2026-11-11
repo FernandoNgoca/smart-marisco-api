@@ -33,6 +33,9 @@ public class ProductServices {
 	@Autowired
 	private ProductRepository productRepository;
 
+    @Autowired
+    private mz.com.sgp.repository.StockRepository stockRepository;
+
 	@Autowired
 	PagedResourcesAssembler<ProductDTO> assembler;
 
@@ -107,12 +110,14 @@ public class ProductServices {
 
 	@Transactional
 	public ProductDTO disableProduct(Long id) {
-		logger.info("A desativar um cliente!");
-
-		productRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Nenhum registo de produto encontrado!"));
-
-		var entity = productRepository.findById(id).get();
+        var entity = productRepository.lockById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Nenhum registo de produto encontrado!"));
+        var stock = stockRepository.lockAllByProductId(id);
+        if (stock.stream().anyMatch(item -> item.getQuantity() != null && item.getQuantity().signum() != 0)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "Não é possível apagar este produto porque ainda tem stock. O saldo deve ser zero.");
+        }
 
 		entity.setStatus(EntityState.INACTIVE);
 

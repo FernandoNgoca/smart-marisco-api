@@ -38,6 +38,21 @@ class OrderLifecycleTests {
         client = new ClientEntity(); client.setFirstName("Cliente"); client.setPhoneNumber("840000000"); client.setType(ClientType.values()[0]); em.persist(client);
         stock = new StockEntity(); stock.setProductId(product.getId()); stock.setQuantity(new BigDecimal("10")); em.persist(stock); em.flush();
     }
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "MANAGER")
+    void productWithStockCannotBeDisabledThroughHttp() throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .patch("/api/product/v1/disableProduct/" + product.getId())
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{}"))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isConflict())
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.detail")
+                .value("Não é possível apagar este produto porque ainda tem stock. O saldo deve ser zero."));
+        em.clear();
+        assertThat(em.find(ProductEntity.class, product.getId()).getStatus())
+            .isEqualTo(mz.com.sgp.config.audit.entity.EntityState.ACTIVE);
+        assertThat(em.find(StockEntity.class, stock.getId()).getQuantity()).isEqualByComparingTo("10");
+    }
+
     SaleDTO create(String quantity) {
         var sale = new SaleDTO(); sale.setSaleStatus(SaleStatus.ORDERS); sale.setClientId(client.getId()); sale.setTotalValue(BigDecimal.ONE);
         var line = new SaleItemDTO(); line.setProductId(product.getId()); line.setQuantity(new BigDecimal(quantity)); line.setUnitPrice(BigDecimal.ONE);
