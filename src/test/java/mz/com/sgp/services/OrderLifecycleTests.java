@@ -13,13 +13,22 @@ import jakarta.persistence.EntityManager;
 import mz.com.sgp.model.*;
 import mz.com.sgp.data.dto.*;
 import mz.com.sgp.repository.*;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import mz.com.sgp.config.audit.entity.EntityState;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.hamcrest.Matchers;
 
 @SpringBootTest
-@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
 class OrderLifecycleTests {
-    @Autowired org.springframework.test.web.servlet.MockMvc mvc;
+    @Autowired MockMvc mvc;
     @Autowired EntityManager em;
     @Autowired OrderLifecycleService service;
     @Autowired StockRepository stocks;
@@ -39,17 +48,17 @@ class OrderLifecycleTests {
         stock = new StockEntity(); stock.setProductId(product.getId()); stock.setQuantity(new BigDecimal("10")); em.persist(stock); em.flush();
     }
     @Test
-    @org.springframework.security.test.context.support.WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "MANAGER")
     void productWithStockCannotBeDisabledThroughHttp() throws Exception {
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+        mvc.perform(MockMvcRequestBuilders
                 .patch("/api/product/v1/disableProduct/" + product.getId())
-                .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{}"))
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isConflict())
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.detail")
+                .contentType(MediaType.APPLICATION_JSON).content("{}"))
+            .andExpect(MockMvcResultMatchers.status().isConflict())
+            .andExpect(MockMvcResultMatchers.jsonPath("$.detail")
                 .value("Não é possível apagar este produto porque ainda tem stock. O saldo deve ser zero."));
         em.clear();
         assertThat(em.find(ProductEntity.class, product.getId()).getStatus())
-            .isEqualTo(mz.com.sgp.config.audit.entity.EntityState.ACTIVE);
+            .isEqualTo(EntityState.ACTIVE);
         assertThat(em.find(StockEntity.class, stock.getId()).getQuantity()).isEqualByComparingTo("10");
     }
 
@@ -111,11 +120,11 @@ class OrderLifecycleTests {
     }
     @Test void httpCompletionReturnsReadableStockConflict() throws Exception {
         var order = create("20");
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/sale/v1/orders/" + order.getId() + "/complete")
-            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("seller").roles("USER"))
+        mvc.perform(MockMvcRequestBuilders.post("/api/sale/v1/orders/" + order.getId() + "/complete")
+            .with(SecurityMockMvcRequestPostProcessors.user("seller").roles("USER"))
             .contentType("application/json").content("{\"version\":" + order.getVersion() + "}"))
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isConflict())
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Stock insuficiente")));
+            .andExpect(MockMvcResultMatchers.status().isConflict())
+            .andExpect(MockMvcResultMatchers.jsonPath("$.detail").value(Matchers.containsString("Stock insuficiente")));
     }
 
     @Autowired StockMovementServices historyService;
@@ -145,16 +154,16 @@ class OrderLifecycleTests {
         var future = historyService.history(product.getId(), 0, 5, null, java.time.LocalDate.now().plusDays(1), null);
         assertThat(future.items()).isEmpty();
         assertThat(future.movements()).isEqualTo(15);
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+        mvc.perform(MockMvcRequestBuilders.get(
                 "/api/stockMovement/v1/product/" + product.getId() + "/history")
-                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("seller").roles("USER")))
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.totalElements").value(15))
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.items[0].description").value("Teste de histórico"));
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                .with(SecurityMockMvcRequestPostProcessors.user("seller").roles("USER")))
+            .andExpect(MockMvcResultMatchers.status().isOk())
+            .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(15))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].description").value("Teste de histórico"));
+        mvc.perform(MockMvcRequestBuilders.get(
                 "/api/stockMovement/v1/product/" + product.getId() + "/history?from=2026-10-02&to=2026-10-01")
-                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("seller").roles("USER")))
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest());
+                .with(SecurityMockMvcRequestPostProcessors.user("seller").roles("USER")))
+            .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test void completedOrderRecordsMovementReference() {

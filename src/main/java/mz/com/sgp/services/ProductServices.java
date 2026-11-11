@@ -24,6 +24,9 @@ import mz.com.sgp.data.dto.ProductDTO;
 import mz.com.sgp.exception.ResourceNotFoundException;
 import mz.com.sgp.model.ProductEntity;
 import mz.com.sgp.repository.ProductRepository;
+import mz.com.sgp.repository.StockRepository;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @Service
 public class ProductServices {
@@ -34,7 +37,7 @@ public class ProductServices {
 	private ProductRepository productRepository;
 
     @Autowired
-    private mz.com.sgp.repository.StockRepository stockRepository;
+    private StockRepository stockRepository;
 
 	@Autowired
 	PagedResourcesAssembler<ProductDTO> assembler;
@@ -114,8 +117,8 @@ public class ProductServices {
             .orElseThrow(() -> new ResourceNotFoundException("Nenhum registo de produto encontrado!"));
         var stock = stockRepository.lockAllByProductId(id);
         if (stock.stream().anyMatch(item -> item.getQuantity() != null && item.getQuantity().signum() != 0)) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.CONFLICT,
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
                 "Não é possível apagar este produto porque ainda tem stock. O saldo deve ser zero.");
         }
 

@@ -25,8 +25,11 @@ import mz.com.sgp.exception.ResourceNotFoundException;
 import mz.com.sgp.model.MovementType;
 import mz.com.sgp.model.StockEntity;
 import mz.com.sgp.model.StockMovementEntity;
+import mz.com.sgp.repository.ProductRepository;
 import mz.com.sgp.repository.StockMovementRepository;
 import mz.com.sgp.repository.StockRepository;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @Service
 public class StockServices {
@@ -37,7 +40,7 @@ public class StockServices {
 	private StockRepository stockRepository;
 
     @Autowired
-    private mz.com.sgp.repository.ProductRepository productRepository;
+    private ProductRepository productRepository;
 
 	@Autowired
 	private PagedResourcesAssembler<StockDTO> assembler;
@@ -66,8 +69,8 @@ public class StockServices {
 		var product = productRepository.lockById(stock.getProductId())
             .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado."));
         if (product.getStatus() != EntityState.ACTIVE) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.CONFLICT, "Não é possível adicionar stock a um produto inativo.");
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT, "Não é possível adicionar stock a um produto inativo.");
         }
         var entity = parseObject(stock, StockEntity.class);
 		var savedEntity = stockRepository.save(entity);

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 import mz.com.sgp.config.audit.entity.EntityState;
+import mz.com.sgp.data.dto.StockDTO;
 import mz.com.sgp.model.ProductEntity;
 import mz.com.sgp.model.StockEntity;
 import mz.com.sgp.repository.ProductRepository;
@@ -54,5 +55,23 @@ class ProductStockDeletionTests {
             assertEquals(EntityState.INACTIVE, product.getStatus());
             verify(products).save(product);
         }
+    }
+
+    @Test void rejectsStockForInactiveProduct() {
+        var products = mock(ProductRepository.class);
+        var stocks = mock(StockRepository.class);
+        var service = new StockServices();
+        ReflectionTestUtils.setField(service, "productRepository", products);
+        ReflectionTestUtils.setField(service, "stockRepository", stocks);
+        var product = new ProductEntity();
+        product.setId(1L);
+        product.setStatus(EntityState.INACTIVE);
+        when(products.lockById(1L)).thenReturn(Optional.of(product));
+        var stock = new StockDTO();
+        stock.setProductId(1L);
+        stock.setQuantity(new BigDecimal("5"));
+        var error = assertThrows(ResponseStatusException.class, () -> service.create(stock));
+        assertEquals(409, error.getStatusCode().value());
+        verify(stocks, never()).save(any());
     }
 }
