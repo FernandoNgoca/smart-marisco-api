@@ -2,6 +2,8 @@ package mz.com.sgp.services;
 
 import static mz.com.sgp.mapper.ObjectMapper.parseObject;
 
+import java.util.HashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,8 +122,17 @@ public class ClientServices {
 	private PagedModel<EntityModel<ClientDTO>> buildPagedModel(Pageable pageable, Page<ClientEntity> clientEntity,
 			String search) {
 
+		// Pedidos pendentes de todos os clientes da página numa só consulta.
+		var ids = clientEntity.map(ClientEntity::getId).toList();
+		var pending = new HashMap<Long, Long>();
+		if (!ids.isEmpty()) {
+			for (Object[] row : saleRepository.countByClientIds(ids, SaleStatus.ORDERS, EntityState.ACTIVE)) {
+				pending.put((Long) row[0], ((Number) row[1]).longValue());
+			}
+		}
 		var clients = clientEntity.map(p -> {
 			var dto = parseObject(p, ClientDTO.class);
+			dto.setPendingOrders(pending.getOrDefault(p.getId(), 0L));
 			return dto;
 		});
 

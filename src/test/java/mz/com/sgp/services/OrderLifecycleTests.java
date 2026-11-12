@@ -119,8 +119,13 @@ class OrderLifecycleTests {
         em.flush(); em.clear();
         assertThat(em.find(ClientEntity.class, client.getId()).getStatus()).isEqualTo(EntityState.ACTIVE);
 
+        mvc.perform(MockMvcRequestBuilders.get("/api/client/v1").param("size", "1000"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$._embedded.clients[?(@.id == " + client.getId() + ")].pendingOrders").value(Matchers.contains(1)));
+
         service.cancel(order.getId(), order.getVersion());
         em.flush();
+        mvc.perform(MockMvcRequestBuilders.get("/api/client/v1").param("size", "1000"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$._embedded.clients[?(@.id == " + client.getId() + ")].pendingOrders").value(Matchers.contains(0)));
         mvc.perform(MockMvcRequestBuilders.patch("/api/client/v1/disableClient/" + client.getId()))
             .andExpect(MockMvcResultMatchers.status().isOk());
         em.flush(); em.clear();

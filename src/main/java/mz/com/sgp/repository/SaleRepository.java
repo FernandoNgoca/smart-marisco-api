@@ -1,6 +1,7 @@
 package mz.com.sgp.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -115,4 +116,8 @@ public interface SaleRepository extends JpaRepository<SaleEntity, Long> {
 	long countByStatusAndSaleStatus(EntityState status, SaleStatus saleStatus);
 
 	long countByClientIdAndSaleStatusAndStatus(Long clientId, SaleStatus saleStatus, EntityState status);
+
+	@Query("SELECT s.clientId, COUNT(s) FROM SaleEntity s WHERE s.clientId IN :clientIds AND s.saleStatus = :saleStatus AND s.status = :status GROUP BY s.clientId")
+	List<Object[]> countByClientIds(@Param("clientIds") Collection<Long> clientIds, @Param("saleStatus") SaleStatus saleStatus,
+			@Param("status") EntityState status);
 }
