@@ -10,8 +10,15 @@ import org.springframework.data.repository.query.Param;
 
 import mz.com.sgp.config.audit.entity.EntityState;
 import mz.com.sgp.model.ProductEntity;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
+import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM ProductEntity p WHERE p.id = :id")
+    Optional<ProductEntity> lockById(@Param("id") Long id);
+
 
 	@Query("SELECT p FROM ProductEntity p WHERE p.status = :status")
 	Page<ProductEntity> findAll(Pageable pageable, @Param("status") EntityState status);

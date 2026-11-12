@@ -41,7 +41,7 @@ public class ReportService {
                 args.add(from.atStartOfDay()); args.add(to.plusDays(1).atStartOfDay());
                 if (!seller.isEmpty()) { where += " AND s.CREATED_BY=?"; args.add(seller); }
                 q = new Query("Vendas", "s.ID, COALESCE(s.COMPLETED_DATE,s.CREATED_DATE), COALESCE(CONCAT(c.FIRST_NAME, ' ', COALESCE(c.LAST_NAME,'')), 'Consumidor final'), COALESCE(s.CREATED_BY,'Não registado'), s.TOTAL_VALUE", where,
-                    "COALESCE(s.COMPLETED_DATE,s.CREATED_DATE) DESC, s.ID DESC", List.of(col("Venda", "text"), col("Data de conclusão", "date"), col("Cliente", "text"), col("Registado por", "text"), col("Total (MZN)", "money")), args);
+                    "COALESCE(s.COMPLETED_DATE,s.CREATED_DATE) DESC, s.ID DESC", List.of(col("Venda", "text"), col("Data de conclusão", "date"), col("Cliente", "text"), col("Registado por", "text"), col("Total (MT)", "money")), args);
             }
             case "stock" -> {
                 where = " FROM STOCK s JOIN PRODUCT p ON p.ID=s.PRODUCT_ID LEFT JOIN UNIT u ON u.ID=p.UNIT_ID WHERE s.STATUS=1 AND p.STATUS=1";

@@ -1,5 +1,6 @@
 package mz.com.sgp.controllers;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.security.Principal;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.MediaType;
@@ -23,7 +25,9 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import mz.com.sgp.data.dto.SaleDTO;
 import mz.com.sgp.data.dto.SaleRequestDTO;
+import mz.com.sgp.data.dto.SaleSummaryDTO;
 import mz.com.sgp.data.dto.SalesByDayDTO;
+import mz.com.sgp.model.SaleStatus;
 import mz.com.sgp.services.SaleServices;
 
 
@@ -72,12 +76,25 @@ public class SaleController {
 			@RequestParam(value = "size", defaultValue = "12") Integer size,
 			@RequestParam(value = "direction", defaultValue = "asc") String direction,
 			@RequestParam(value = "sortField", defaultValue = "") String sortField,
-			@RequestParam(value = "search", required = false) String search) {
+			@RequestParam(value = "search", required = false) String search,
+			@RequestParam(value = "saleStatus", required = false) SaleStatus saleStatus,
+			@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 		var sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
 
 		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, saleSortField(sortField)));
 
-		return ResponseEntity.ok(saleServices.findAll(pageable, search));
+		return ResponseEntity.ok(saleServices.history(pageable, false, search, saleStatus, from, to));
+	}
+
+	@GetMapping(value = "/history/summary", produces = MediaType.APPLICATION_JSON_VALUE)
+	public SaleSummaryDTO historySummary(
+			@RequestParam(value = "orders", defaultValue = "false") boolean orders,
+			@RequestParam(value = "search", required = false) String search,
+			@RequestParam(value = "saleStatus", required = false) SaleStatus saleStatus,
+			@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+		return saleServices.historySummary(orders, search, saleStatus, from, to);
 	}
 
 	@GetMapping(value = "/countByCreatedDate", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -121,12 +138,15 @@ public class SaleController {
 			@RequestParam(value = "size", defaultValue = "12") Integer size,
 			@RequestParam(value = "direction", defaultValue = "asc") String direction,
 			@RequestParam(value = "sortField", defaultValue = "") String sortField,
-			@RequestParam(value = "search", required = false) String search) {
+			@RequestParam(value = "search", required = false) String search,
+			@RequestParam(value = "saleStatus", required = false) SaleStatus saleStatus,
+			@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 		var sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
 
 		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, saleSortField(sortField)));
 
-		return ResponseEntity.ok(saleServices.findAllOrders(pageable, search));
+		return ResponseEntity.ok(saleServices.history(pageable, true, search, saleStatus, from, to));
 	}
 	
 	@GetMapping("/countByStatusAndSaleStatus")

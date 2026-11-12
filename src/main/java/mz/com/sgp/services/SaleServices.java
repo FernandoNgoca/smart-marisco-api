@@ -4,6 +4,7 @@ import mz.com.sgp.validation.QuantityRules;
 
 import static mz.com.sgp.mapper.ObjectMapper.parseObject;
 
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,6 +30,7 @@ import mz.com.sgp.config.audit.entity.EntityState;
 import mz.com.sgp.controllers.SaleController;
 import mz.com.sgp.data.dto.SaleDTO;
 import mz.com.sgp.data.dto.SaleItemDTO;
+import mz.com.sgp.data.dto.SaleSummaryDTO;
 import mz.com.sgp.data.dto.SalesByDayDTO;
 import mz.com.sgp.data.dto.StockMovementDTO;
 import mz.com.sgp.exception.ResourceNotFoundException;
@@ -68,16 +70,40 @@ public class SaleServices {
     }
 
 	public PagedModel<EntityModel<SaleDTO>> findAll(Pageable pageable, String search) {
+		return history(pageable, false, search, null, null, null);
+	}
 
-		Page<SaleEntity> sale;
-
-		if (search != null && !search.isBlank()) {
-			sale = saleRepository.search(search.toLowerCase(), EntityState.ACTIVE, pageable);
-		} else {
-			sale = saleRepository.findAll(pageable, EntityState.ACTIVE);
-		}
-
+	/**
+	 * Histórico de vendas ou de pedidos (ordersOnly) com filtros opcionais.
+	 * search procura no nome do cliente ou no número da venda ("12" ou "#12"); as datas são inclusivas.
+	 */
+	public PagedModel<EntityModel<SaleDTO>> history(Pageable pageable, boolean ordersOnly, String search,
+			SaleStatus saleStatus, LocalDate from, LocalDate to) {
+		var f = HistoryFilter.of(search, from, to);
+		var sale = saleRepository.history(EntityState.ACTIVE, ordersOnly, f.search(), f.saleId(), saleStatus,
+				f.start(), f.end(), pageable);
 		return buildPagedModel(pageable, sale, search);
+	}
+
+	public SaleSummaryDTO historySummary(boolean ordersOnly, String search, SaleStatus saleStatus, LocalDate from,
+			LocalDate to) {
+		var f = HistoryFilter.of(search, from, to);
+		var row = saleRepository.historySummary(EntityState.ACTIVE, ordersOnly, f.search(), f.saleId(), saleStatus,
+				f.start(), f.end()).get(0);
+		return new SaleSummaryDTO(((Number) row[0]).longValue(), (BigDecimal) row[1]);
+	}
+
+	private record HistoryFilter(String search, Long saleId, LocalDateTime start, LocalDateTime end) {
+		static HistoryFilter of(String search, LocalDate from, LocalDate to) {
+			String text = search == null || search.isBlank() ? null : search.trim().toLowerCase();
+			Long saleId = null;
+			if (text != null) {
+				var digits = text.startsWith("#") ? text.substring(1) : text;
+				if (digits.matches("\\d{1,18}")) saleId = Long.valueOf(digits);
+			}
+			return new HistoryFilter(text, saleId, from == null ? null : from.atStartOfDay(),
+					to == null ? null : to.plusDays(1).atStartOfDay());
+		}
 	}
 
 	public Long countByCreatedDateBetweenAndSaleStatusAndStatus() {
@@ -196,16 +222,7 @@ public class SaleServices {
 	}
 
 	public PagedModel<EntityModel<SaleDTO>> findAllOrders(Pageable pageable, String search) {
-
-		Page<SaleEntity> sale;
-
-		if (search != null && !search.isBlank()) {
-			sale = saleRepository.searchOrders(search.toLowerCase(), EntityState.ACTIVE, pageable);
-		} else {
-			sale = saleRepository.findAllOrders(pageable, EntityState.ACTIVE);
-		}
-
-		return buildPagedModel(pageable, sale, search);
+		return history(pageable, true, search, null, null, null);
 	}
 	
 	public long countByStatusAndSaleStatus() {
@@ -226,7 +243,7 @@ public class SaleServices {
 				.map(order -> order.getDirection().name().toLowerCase()).orElse("asc");
 
 		Link findAllLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(SaleController.class)
-				.findAll(pageable.getPageNumber(), pageable.getPageSize(), direction, sortField, search)).withSelfRel();
+				.findAll(pageable.getPageNumber(), pageable.getPageSize(), direction, sortField, search, null, null, null)).withSelfRel();
 
 		return assembler.toModel(products, findAllLink);
 	}

@@ -126,7 +126,7 @@ public class OrderLifecycleService {
             if (sale.getOrderRecord()) throw error(HttpStatus.BAD_REQUEST, "Selecione um cliente para o pedido");
             return;
         }
-        var client = clients.findById(id).filter(c -> c.getStatus() == EntityState.ACTIVE)
+        var client = clients.lockById(id).filter(c -> c.getStatus() == EntityState.ACTIVE)
             .orElseThrow(() -> error(HttpStatus.BAD_REQUEST, "Cliente inválido ou inativo"));
         sale.setClientId(id); sale.setClient(client);
     }

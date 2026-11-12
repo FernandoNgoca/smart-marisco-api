@@ -2,6 +2,8 @@ package mz.com.sgp.services;
 
 import static mz.com.sgp.mapper.ObjectMapper.parseObject;
 
+import java.util.HashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,10 @@ import mz.com.sgp.data.dto.ClientDTO;
 import mz.com.sgp.exception.ResourceNotFoundException;
 import mz.com.sgp.model.ClientEntity;
 import mz.com.sgp.repository.ClientRepository;
+import mz.com.sgp.repository.SaleRepository;
+import mz.com.sgp.model.SaleStatus;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ClientServices {
@@ -29,6 +35,9 @@ public class ClientServices {
 
 	@Autowired
 	ClientRepository clientRepository;
+
+	@Autowired
+	SaleRepository saleRepository;
 
 	@Autowired
 	PagedResourcesAssembler<ClientDTO> assembler;
@@ -88,10 +97,14 @@ public class ClientServices {
 	public ClientDTO disableClient(Long id) {
 		logger.info("A desativar um cliente!");
 
-		clientRepository.findById(id)
+		var entity = clientRepository.lockById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Nenhum registo encontrado para este ID!"));
-
-		var entity = clientRepository.findById(id).get();
+		long pending = saleRepository.countByClientIdAndSaleStatusAndStatus(id, SaleStatus.ORDERS, EntityState.ACTIVE);
+		if (pending > 0) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, pending == 1
+					? "Não é possível apagar este cliente porque tem 1 pedido pendente. Conclua ou cancele o pedido primeiro."
+					: "Não é possível apagar este cliente porque tem " + pending + " pedidos pendentes. Conclua ou cancele os pedidos primeiro.");
+		}
 
 		entity.setStatus(EntityState.INACTIVE);
 
@@ -109,8 +122,17 @@ public class ClientServices {
 	private PagedModel<EntityModel<ClientDTO>> buildPagedModel(Pageable pageable, Page<ClientEntity> clientEntity,
 			String search) {
 
+		// Pedidos pendentes de todos os clientes da página numa só consulta.
+		var ids = clientEntity.map(ClientEntity::getId).toList();
+		var pending = new HashMap<Long, Long>();
+		if (!ids.isEmpty()) {
+			for (Object[] row : saleRepository.countByClientIds(ids, SaleStatus.ORDERS, EntityState.ACTIVE)) {
+				pending.put((Long) row[0], ((Number) row[1]).longValue());
+			}
+		}
 		var clients = clientEntity.map(p -> {
 			var dto = parseObject(p, ClientDTO.class);
+			dto.setPendingOrders(pending.getOrDefault(p.getId(), 0L));
 			return dto;
 		});
 

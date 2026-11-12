@@ -10,13 +10,27 @@ import org.springframework.data.repository.query.Param;
 
 import mz.com.sgp.config.audit.entity.EntityState;
 import mz.com.sgp.model.StockEntity;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
+import java.util.List;
+import java.util.Collection;
 
 public interface StockRepository extends JpaRepository<StockEntity, Long> {
-    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT DISTINCT s.productId FROM StockEntity s WHERE s.productId IN :productIds AND s.quantity <> 0")
+    List<Long> findProductIdsWithStock(@Param("productIds") Collection<Long> productIds);
+
+    @Query("SELECT s.productId, SUM(s.quantity) FROM StockEntity s WHERE s.productId IN :productIds AND s.status = :status GROUP BY s.productId")
+    List<Object[]> sumQuantityByProductId(@Param("productIds") Collection<Long> productIds, @Param("status") EntityState status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM StockEntity s WHERE s.productId = :productId ORDER BY s.id")
+    List<StockEntity> lockAllByProductId(@Param("productId") Long productId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM StockEntity s WHERE s.productId = :productId AND s.status = mz.com.sgp.config.audit.entity.EntityState.ACTIVE")
     Optional<StockEntity> lockByProductId(@Param("productId") Long productId);
 
-    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM StockEntity s WHERE s.id = :id AND s.status = mz.com.sgp.config.audit.entity.EntityState.ACTIVE")
     Optional<StockEntity> lockById(@Param("id") Long id);
 

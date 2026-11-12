@@ -8,8 +8,16 @@ import org.springframework.data.repository.query.Param;
 
 import mz.com.sgp.config.audit.entity.EntityState;
 import mz.com.sgp.model.ClientEntity;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 
 public interface ClientRepository extends JpaRepository<ClientEntity, Long> {
+	// Bloqueia o cliente para que desativar e registar um pedido não aconteçam ao mesmo tempo.
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT c FROM ClientEntity c WHERE c.id = :id")
+	Optional<ClientEntity> lockById(@Param("id") Long id);
+
 
 	@Query("SELECT p FROM ClientEntity p WHERE p.status = :status")
 	Page<ClientEntity> findAll(Pageable pageable, @Param("status") EntityState status);
