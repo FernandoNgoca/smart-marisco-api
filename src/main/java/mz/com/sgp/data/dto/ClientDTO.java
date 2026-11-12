@@ -22,6 +22,17 @@ public class ClientDTO extends AuditableDTO<ClientDTO> {
 
 	private String email;
 
+	/** Só leitura: pedidos pendentes do cliente, preenchido na listagem. */
+	private Long pendingOrders;
+
+	public Long getPendingOrders() {
+		return pendingOrders;
+	}
+
+	public void setPendingOrders(Long pendingOrders) {
+		this.pendingOrders = pendingOrders;
+	}
+
 	ClientType type;
 
 	public ClientDTO() {

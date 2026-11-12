@@ -25,8 +25,11 @@ import mz.com.sgp.exception.ResourceNotFoundException;
 import mz.com.sgp.model.MovementType;
 import mz.com.sgp.model.StockEntity;
 import mz.com.sgp.model.StockMovementEntity;
+import mz.com.sgp.repository.ProductRepository;
 import mz.com.sgp.repository.StockMovementRepository;
 import mz.com.sgp.repository.StockRepository;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @Service
 public class StockServices {
@@ -35,6 +38,9 @@ public class StockServices {
 
 	@Autowired
 	private StockRepository stockRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
 
 	@Autowired
 	private PagedResourcesAssembler<StockDTO> assembler;
@@ -60,7 +66,16 @@ public class StockServices {
         QuantityRules.stock(stock == null ? null : stock.getQuantity());
 		logger.info("Foi criado um Estoque: " + stock);
 
-		var entity = parseObject(stock, StockEntity.class);
+		if (stock.getProductId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O produto é obrigatório.");
+        }
+		var product = productRepository.lockById(stock.getProductId())
+            .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado."));
+        if (product.getStatus() != EntityState.ACTIVE) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT, "Não é possível adicionar stock a um produto inativo.");
+        }
+        var entity = parseObject(stock, StockEntity.class);
 		var savedEntity = stockRepository.save(entity);
 
 		// Criar movimento de entrada

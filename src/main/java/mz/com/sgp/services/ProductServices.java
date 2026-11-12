@@ -3,7 +3,12 @@ package mz.com.sgp.services;
 import static mz.com.sgp.mapper.ObjectMapper.parseListObjects;
 import static mz.com.sgp.mapper.ObjectMapper.parseObject;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +29,9 @@ import mz.com.sgp.data.dto.ProductDTO;
 import mz.com.sgp.exception.ResourceNotFoundException;
 import mz.com.sgp.model.ProductEntity;
 import mz.com.sgp.repository.ProductRepository;
+import mz.com.sgp.repository.StockRepository;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @Service
 public class ProductServices {
@@ -32,6 +40,9 @@ public class ProductServices {
 
 	@Autowired
 	private ProductRepository productRepository;
+
+    @Autowired
+    private StockRepository stockRepository;
 
 	@Autowired
 	PagedResourcesAssembler<ProductDTO> assembler;
@@ -107,12 +118,14 @@ public class ProductServices {
 
 	@Transactional
 	public ProductDTO disableProduct(Long id) {
-		logger.info("A desativar um cliente!");
-
-		productRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Nenhum registo de produto encontrado!"));
-
-		var entity = productRepository.findById(id).get();
+        var entity = productRepository.lockById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Nenhum registo de produto encontrado!"));
+        var stock = stockRepository.lockAllByProductId(id);
+        if (stock.stream().anyMatch(item -> item.getQuantity() != null && item.getQuantity().signum() != 0)) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Não é possível apagar este produto porque ainda tem stock. O saldo deve ser zero.");
+        }
 
 		entity.setStatus(EntityState.INACTIVE);
 
@@ -134,8 +147,12 @@ public class ProductServices {
 	private PagedModel<EntityModel<ProductDTO>> buildPagedModel(Pageable pageable, Page<ProductEntity> productEntity,
 			String search) {
 
+		var ids = productEntity.map(ProductEntity::getId).toList();
+		var withStock = ids.isEmpty() ? Set.<Long>of() : new HashSet<>(stockRepository.findProductIdsWithStock(ids));
+
 		var products = productEntity.map(p -> {
 			var dto = parseObject(p, ProductDTO.class);
+			dto.setHasStock(withStock.contains(p.getId()));
 			return dto;
 		});
 
@@ -163,7 +180,15 @@ public class ProductServices {
 		logger.info("Procurar todos Produtos com com estoque.");
 
 		var products = this.productRepository.findAvailableProducts(EntityState.ACTIVE);
-
-		return parseListObjects(products, ProductDTO.class);
+		var dtos = parseListObjects(products, ProductDTO.class);
+		var ids = products.stream().map(ProductEntity::getId).toList();
+		if (!ids.isEmpty()) {
+			Map<Long, BigDecimal> quantities = new HashMap<>();
+			for (Object[] row : stockRepository.sumQuantityByProductId(ids, EntityState.ACTIVE)) {
+				quantities.put((Long) row[0], (BigDecimal) row[1]);
+			}
+			dtos.forEach(dto -> dto.setStockQuantity(quantities.getOrDefault(dto.getId(), BigDecimal.ZERO)));
+		}
+		return dtos;
 	}	
 }

@@ -1,6 +1,7 @@
 package mz.com.sgp.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -25,6 +26,32 @@ public interface SaleRepository extends JpaRepository<SaleEntity, Long> {
 
 	@Query("SELECT s FROM SaleEntity s WHERE s.status = :status")
 	Page<SaleEntity> findAll(Pageable pageable, @Param("status") EntityState status);
+
+	// Filtros do histórico; cada parâmetro a null é ignorado. LEFT JOIN mantém o consumidor final.
+	// O alias "client" coincide com o campo de ordenação "client.firstName", para o Spring Data reutilizar o join.
+	String HISTORY_FILTER = """
+			FROM SaleEntity s LEFT JOIN s.client client
+			WHERE s.status = :status
+			  AND (:ordersOnly = false OR s.orderRecord = true)
+			  AND (:search IS NULL
+			       OR LOWER(client.firstName) LIKE CONCAT('%', :search, '%')
+			       OR LOWER(client.lastName) LIKE CONCAT('%', :search, '%')
+			       OR s.id = :saleId)
+			  AND (:saleStatus IS NULL OR s.saleStatus = :saleStatus)
+			  AND (:start IS NULL OR s.createdDate >= :start)
+			  AND (:end IS NULL OR s.createdDate < :end)
+			""";
+
+	@Query(value = "SELECT s " + HISTORY_FILTER, countQuery = "SELECT COUNT(s) " + HISTORY_FILTER)
+	Page<SaleEntity> history(@Param("status") EntityState status, @Param("ordersOnly") boolean ordersOnly,
+			@Param("search") String search, @Param("saleId") Long saleId, @Param("saleStatus") SaleStatus saleStatus,
+			@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, Pageable pageable);
+
+	@Query("SELECT COUNT(s), COALESCE(SUM(CASE WHEN s.saleStatus = mz.com.sgp.model.SaleStatus.COMPLETED THEN s.totalValue ELSE 0 END), 0) "
+			+ HISTORY_FILTER)
+	List<Object[]> historySummary(@Param("status") EntityState status, @Param("ordersOnly") boolean ordersOnly,
+			@Param("search") String search, @Param("saleId") Long saleId, @Param("saleStatus") SaleStatus saleStatus,
+			@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
 	@Query("""
 			    SELECT s FROM SaleEntity s
@@ -87,4 +114,10 @@ public interface SaleRepository extends JpaRepository<SaleEntity, Long> {
 			Pageable pageable);
 	
 	long countByStatusAndSaleStatus(EntityState status, SaleStatus saleStatus);
+
+	long countByClientIdAndSaleStatusAndStatus(Long clientId, SaleStatus saleStatus, EntityState status);
+
+	@Query("SELECT s.clientId, COUNT(s) FROM SaleEntity s WHERE s.clientId IN :clientIds AND s.saleStatus = :saleStatus AND s.status = :status GROUP BY s.clientId")
+	List<Object[]> countByClientIds(@Param("clientIds") Collection<Long> clientIds, @Param("saleStatus") SaleStatus saleStatus,
+			@Param("status") EntityState status);
 }
