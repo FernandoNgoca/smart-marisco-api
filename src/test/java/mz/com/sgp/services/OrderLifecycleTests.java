@@ -109,6 +109,24 @@ class OrderLifecycleTests {
             .andExpect(MockMvcResultMatchers.jsonPath("$.page.totalElements").value(0));
     }
 
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void clientWithPendingOrderCannotBeDisabled() throws Exception {
+        var order = create("2");
+        mvc.perform(MockMvcRequestBuilders.patch("/api/client/v1/disableClient/" + client.getId()))
+            .andExpect(MockMvcResultMatchers.status().isConflict())
+            .andExpect(MockMvcResultMatchers.jsonPath("$.detail").value(Matchers.containsString("1 pedido pendente")));
+        em.flush(); em.clear();
+        assertThat(em.find(ClientEntity.class, client.getId()).getStatus()).isEqualTo(EntityState.ACTIVE);
+
+        service.cancel(order.getId(), order.getVersion());
+        em.flush();
+        mvc.perform(MockMvcRequestBuilders.patch("/api/client/v1/disableClient/" + client.getId()))
+            .andExpect(MockMvcResultMatchers.status().isOk());
+        em.flush(); em.clear();
+        assertThat(em.find(ClientEntity.class, client.getId()).getStatus()).isEqualTo(EntityState.INACTIVE);
+    }
+
     SaleDTO create(String quantity) {
         var sale = new SaleDTO(); sale.setSaleStatus(SaleStatus.ORDERS); sale.setClientId(client.getId()); sale.setTotalValue(BigDecimal.ONE);
         var line = new SaleItemDTO(); line.setProductId(product.getId()); line.setQuantity(new BigDecimal(quantity)); line.setUnitPrice(BigDecimal.ONE);

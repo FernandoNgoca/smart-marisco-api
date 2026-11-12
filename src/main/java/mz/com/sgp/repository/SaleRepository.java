@@ -113,4 +113,6 @@ public interface SaleRepository extends JpaRepository<SaleEntity, Long> {
 			Pageable pageable);
 	
 	long countByStatusAndSaleStatus(EntityState status, SaleStatus saleStatus);
+
+	long countByClientIdAndSaleStatusAndStatus(Long clientId, SaleStatus saleStatus, EntityState status);
 }

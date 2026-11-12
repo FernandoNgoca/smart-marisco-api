@@ -21,6 +21,10 @@ import mz.com.sgp.data.dto.ClientDTO;
 import mz.com.sgp.exception.ResourceNotFoundException;
 import mz.com.sgp.model.ClientEntity;
 import mz.com.sgp.repository.ClientRepository;
+import mz.com.sgp.repository.SaleRepository;
+import mz.com.sgp.model.SaleStatus;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ClientServices {
@@ -29,6 +33,9 @@ public class ClientServices {
 
 	@Autowired
 	ClientRepository clientRepository;
+
+	@Autowired
+	SaleRepository saleRepository;
 
 	@Autowired
 	PagedResourcesAssembler<ClientDTO> assembler;
@@ -88,10 +95,14 @@ public class ClientServices {
 	public ClientDTO disableClient(Long id) {
 		logger.info("A desativar um cliente!");
 
-		clientRepository.findById(id)
+		var entity = clientRepository.lockById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Nenhum registo encontrado para este ID!"));
-
-		var entity = clientRepository.findById(id).get();
+		long pending = saleRepository.countByClientIdAndSaleStatusAndStatus(id, SaleStatus.ORDERS, EntityState.ACTIVE);
+		if (pending > 0) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, pending == 1
+					? "Não é possível apagar este cliente porque tem 1 pedido pendente. Conclua ou cancele o pedido primeiro."
+					: "Não é possível apagar este cliente porque tem " + pending + " pedidos pendentes. Conclua ou cancele os pedidos primeiro.");
+		}
 
 		entity.setStatus(EntityState.INACTIVE);
 
